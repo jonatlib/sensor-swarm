@@ -1,0 +1,190 @@
+[config]
+skip_core_tasks = true
+
+
+##############################################
+##############################################
+
+[env.development]
+CARGO_PROFILE = "debug"
+
+
+[env.production]
+CARGO_PROFILE = "release"
+
+
+[env]
+TARGET_NAME = "thumbv7em-none-eabihf"
+
+PROJECT_NAME = "${CARGO_MAKE_PROJECT_NAME}"
+TARGET_DIRECTORY = "${CARGO_MAKE_WORKING_DIRECTORY}/target/${TARGET_NAME}/${CARGO_PROFILE}"
+
+ELF_NAME = "${TARGET_DIRECTORY}/${PROJECT_NAME}"
+BINARY_NAME = "${ELF_NAME}.bin"
+
+
+# dfu-util --device 0483:df11 -D /home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin --alt 0 -s 0x08000000
+# Commands
+# cargo install cargo-binutils
+# rustup component add llvm-tools-preview
+
+
+##############################################
+##############################################
+
+[tasks.echo]
+script = [
+    '''
+    echo TARGET_NAME : ${TARGET_NAME}
+    echo PROJECT_NAME : ${PROJECT_NAME}
+    echo CARGO_PROFILE : ${CARGO_PROFILE}
+    echo TARGET_DIRECTORY : ${TARGET_DIRECTORY}
+    echo
+    echo ELF_NAME : ${ELF_NAME}
+    echo BINARY_NAME : ${BINARY_NAME}
+    '''
+]
+
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+
+[tasks.test]
+#command = "cargo"
+#args = ["test"]
+dependencies = ["build"]
+
+
+[tasks.logs]
+command = "cargo"
+args = ["embed"]
+
+
+[tasks.gdb]
+command = "cargo"
+args = ["run", "--", "-ex", "target remote localhost:4242", "-ex", "load", "-ex", "-ex", "break main", "-ex", "help generate-core-file", "-ex", "run"]
+
+
+[tasks.build-binary]
+command = "arm-none-eabi-objcopy"
+args = ["-O", "binary", "${ELF_NAME}", "${BINARY_NAME}"]
+dependencies = ["build", "test", "size"]
+
+
+[tasks.st-probe]
+command = "st-info"
+args = ["--probe"]
+
+
+[tasks.erase]
+command = "st-flash"
+args = ["erase"]
+dependencies = ["st-probe"]
+
+
+[tasks.upload]
+#command = "st-flash"
+#args = ["--reset", "--flash=32k", "write", "${BINARY_NAME}",  "0x8000000"]
+#args = ["--reset", "--flash=16k", "write", "${BINARY_NAME}",  "0x8000000"]
+
+# dfu-util --device 0483:df11 -D /home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin --alt 0 -s 0x08000000
+command = "dfu-util"
+args = ["--device", "0483:df11", "-D", "/home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin", "--alt", "0", "-s", "0x08000000"]
+dependencies = ["st-probe", "build-binary", "size", "size-small"]
+
+
+##############################################
+##############################################
+# Routing
+
+
+[tasks.clean]
+run_task = [
+    { name = "clean-prod", condition = { profiles = ["production"] } },
+    { name = "clean-dev", condition = { profiles = ["development"] } },
+]
+
+
+[tasks.build]
+run_task = [
+    { name = "build-prod", condition = { profiles = ["production"] } },
+    { name = "build-dev", condition = { profiles = ["development"] } },
+]
+dependencies = ["format"]
+
+
+[tasks.size]
+run_task = [
+    { name = "size-prod", condition = { profiles = ["production"] } },
+    { name = "size-dev", condition = { profiles = ["development"] } },
+]
+dependencies = ["build"]
+
+
+[tasks.size-small]
+run_task = [
+    { name = "size-small-prod", condition = { profiles = ["production"] } },
+    { name = "size-small-dev", condition = { profiles = ["development"] } },
+]
+dependencies = ["build"]
+
+
+##############################################
+##############################################
+# Development
+
+
+[tasks.clean-dev]
+private = true
+command = "cargo"
+args = ["clean"]
+
+
+[tasks.build-dev]
+private = true
+command = "cargo"
+args = ["build"]
+
+
+[tasks.size-dev]
+private = true
+command = "cargo"
+args = ["size", "--", "-A"]
+
+
+[tasks.size-small-dev]
+private = true
+command = "cargo"
+args = ["size"]
+
+
+##############################################
+##############################################
+# Production
+
+
+[tasks.clean-prod]
+private = true
+command = "cargo"
+args = ["clean", "--release"]
+
+
+[tasks.build-prod]
+private = true
+command = "cargo"
+args = ["build", "--release"]
+
+
+[tasks.size-prod]
+private = true
+command = "cargo"
+args = ["size", "--release", "--", "-A"]
+
+
+[tasks.size-small-prod]
+private = true
+command = "cargo"
+args = ["size", "--release"]
