@@ -11,7 +11,7 @@ pub const MAX_PAYLOAD_SIZE: usize = 32;
 pub const PACKET_SIZE_BYTES: usize = core::mem::size_of::<Header>() + MAX_PAYLOAD_SIZE;
 
 /// Packet header containing routing and control information
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Format)]
+#[derive(Debug, Clone, PartialEq, Eq, Format)]
 #[repr(C)]
 pub struct Header {
     /// Unique identifier of the sender node
@@ -44,24 +44,9 @@ pub struct PacketControl {
 }
 
 impl PacketControl {
-    /// Create a new PacketControl with default values
-    pub const fn new() -> Self {
-        Self::new_with_raw_value(0)
-    }
-
-    /// Set the acknowledgment request flag
-    pub fn set_ack_request(&mut self, value: bool) {
-        self.set_ack_request(value);
-    }
-
     /// Check if acknowledgment is requested
     pub fn is_ack_request(&self) -> bool {
         self.ack_request()
-    }
-
-    /// Set the acknowledgment response flag
-    pub fn set_ack_response(&mut self, value: bool) {
-        self.set_ack_response(value);
     }
 
     /// Check if this is an acknowledgment response
@@ -69,19 +54,9 @@ impl PacketControl {
         self.ack_response()
     }
 
-    /// Set the emergency/priority flag
-    pub fn set_emergency(&mut self, value: bool) {
-        self.set_emergency(value);
-    }
-
     /// Check if this is an emergency packet
     pub fn is_emergency(&self) -> bool {
         self.emergency()
-    }
-
-    /// Set the retransmission flag
-    pub fn set_retransmit(&mut self, value: bool) {
-        self.set_retransmit(value);
     }
 
     /// Check if this is a retransmitted packet
@@ -90,11 +65,6 @@ impl PacketControl {
     }
 }
 
-impl Default for PacketControl {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl defmt::Format for PacketControl {
     fn format(&self, fmt: defmt::Formatter) {
@@ -103,24 +73,6 @@ impl defmt::Format for PacketControl {
     }
 }
 
-impl core::fmt::Debug for PacketControl {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("PacketControl")
-            .field("ack_request", &self.ack_request())
-            .field("ack_response", &self.ack_response())
-            .field("emergency", &self.emergency())
-            .field("retransmit", &self.retransmit())
-            .finish()
-    }
-}
-
-impl Clone for PacketControl {
-    fn clone(&self) -> Self {
-        Self::new_with_raw_value(self.raw_value())
-    }
-}
-
-impl Copy for PacketControl {}
 
 /// Complete radio packet structure
 #[derive(Debug, Clone, PartialEq, Eq, Format)]
