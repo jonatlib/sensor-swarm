@@ -182,14 +182,14 @@ pub trait EnvironmentalSensor {
     /// This method should be async and non-blocking to maintain power efficiency.
     /// The implementation should handle all hardware-specific communication
     /// protocols and data conversion.
-    async fn read(&mut self) -> Result<EnvironmentalData, SensorError>;
+    fn read(&mut self) -> impl core::future::Future<Output = Result<EnvironmentalData, SensorError>> + Send;
     
     /// Initialize the sensor hardware
     /// 
     /// # Returns
     /// * `Ok(())` if initialization was successful
     /// * `Err(SensorError)` if initialization failed
-    async fn initialize(&mut self) -> Result<(), SensorError>;
+    fn initialize(&mut self) -> impl core::future::Future<Output = Result<(), SensorError>> + Send;
     
     /// Check if the sensor is ready for operation
     /// 
@@ -203,14 +203,14 @@ pub trait EnvironmentalSensor {
     /// # Returns
     /// * `Ok(())` if sleep mode was entered successfully
     /// * `Err(SensorError)` if operation failed
-    async fn sleep(&mut self) -> Result<(), SensorError>;
+    fn sleep(&mut self) -> impl core::future::Future<Output = Result<(), SensorError>> + Send;
     
     /// Wake the sensor from sleep mode
     /// 
     /// # Returns
     /// * `Ok(())` if wake operation was successful
     /// * `Err(SensorError)` if operation failed
-    async fn wake(&mut self) -> Result<(), SensorError>;
+    fn wake(&mut self) -> impl core::future::Future<Output = Result<(), SensorError>> + Send;
     
     /// Get the sensor's capabilities
     /// 
@@ -223,7 +223,7 @@ pub trait EnvironmentalSensor {
     /// # Returns
     /// * `Ok(())` if self-test passed
     /// * `Err(SensorError)` if self-test failed
-    async fn self_test(&mut self) -> Result<(), SensorError>;
+    fn self_test(&mut self) -> impl core::future::Future<Output = Result<(), SensorError>> + Send;
     
     /// Get the minimum time between readings in milliseconds
     /// 

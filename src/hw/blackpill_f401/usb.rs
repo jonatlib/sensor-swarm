@@ -107,17 +107,19 @@ impl UsbManager {
 
 impl DebugInterface for UsbManager {
     /// Initialize the debug interface over USB Serial
-    async fn init(&mut self) -> Result<(), &'static str> {
-        info!("Setting up USB Serial debug interface...");
-        
-        // Note: The actual USB device initialization should be done via init_with_peripheral
-        // This method confirms the debug interface is ready
-        if self.usb_device.is_some() && self.cdc_class.is_some() {
-            info!("USB Serial debug interface ready");
-            Ok(())
-        } else {
-            error!("USB peripheral not initialized. Call init_with_peripheral first.");
-            Err("USB peripheral not initialized")
+    fn init(&mut self) -> impl core::future::Future<Output = Result<(), &'static str>> + Send {
+        async move {
+            info!("Setting up USB Serial debug interface...");
+            
+            // Note: The actual USB device initialization should be done via init_with_peripheral
+            // This method confirms the debug interface is ready
+            if self.usb_device.is_some() && self.cdc_class.is_some() {
+                info!("USB Serial debug interface ready");
+                Ok(())
+            } else {
+                error!("USB peripheral not initialized. Call init_with_peripheral first.");
+                Err("USB peripheral not initialized")
+            }
         }
     }
 }

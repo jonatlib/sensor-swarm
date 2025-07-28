@@ -47,7 +47,7 @@ pub trait RadioTransmitter {
     /// This method should be non-blocking and async to maintain power efficiency.
     /// The implementation should handle all hardware-specific details including
     /// modulation, timing, and power management.
-    async fn transmit(&mut self, packet: &Packet) -> Result<(), RadioError>;
+    fn transmit(&mut self, packet: &Packet) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Check if the transmitter is ready for operation
     /// 
@@ -64,7 +64,7 @@ pub trait RadioTransmitter {
     /// # Returns
     /// * `Ok(())` if power level was set successfully
     /// * `Err(RadioError)` if setting failed
-    async fn set_power_level(&mut self, power_level: u8) -> Result<(), RadioError>;
+    fn set_power_level(&mut self, power_level: u8) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Get the current transmission power level
     /// 
@@ -88,7 +88,7 @@ pub trait RadioReceiver {
     /// This method should be non-blocking and async. It should return immediately
     /// if no packet is available, allowing the caller to handle timeouts and
     /// other async operations efficiently.
-    async fn receive(&mut self) -> Result<Packet, RadioError>;
+    fn receive(&mut self) -> impl core::future::Future<Output = Result<Packet, RadioError>> + Send;
 
     /// Check if a packet is available for reception
     /// 
@@ -105,7 +105,7 @@ pub trait RadioReceiver {
     /// # Returns
     /// * `Ok(())` if operation was successful
     /// * `Err(RadioError)` if operation failed
-    async fn set_enabled(&mut self, enabled: bool) -> Result<(), RadioError>;
+    fn set_enabled(&mut self, enabled: bool) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Check if the receiver is currently enabled
     /// 
@@ -131,21 +131,21 @@ pub trait RadioTransceiver: RadioTransmitter + RadioReceiver {
     /// # Returns
     /// * `Ok(())` if initialization was successful
     /// * `Err(RadioError)` if initialization failed
-    async fn initialize(&mut self) -> Result<(), RadioError>;
+    fn initialize(&mut self) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Put the radio into low-power sleep mode
     /// 
     /// # Returns
     /// * `Ok(())` if sleep mode was entered successfully
     /// * `Err(RadioError)` if operation failed
-    async fn sleep(&mut self) -> Result<(), RadioError>;
+    fn sleep(&mut self) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Wake the radio from sleep mode
     /// 
     /// # Returns
     /// * `Ok(())` if wake operation was successful
     /// * `Err(RadioError)` if operation failed
-    async fn wake(&mut self) -> Result<(), RadioError>;
+    fn wake(&mut self) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 
     /// Get the current operating frequency in Hz
     /// 
@@ -161,5 +161,5 @@ pub trait RadioTransceiver: RadioTransmitter + RadioReceiver {
     /// # Returns
     /// * `Ok(())` if frequency was set successfully
     /// * `Err(RadioError)` if frequency setting failed
-    async fn set_frequency(&mut self, frequency_hz: u32) -> Result<(), RadioError>;
+    fn set_frequency(&mut self, frequency_hz: u32) -> impl core::future::Future<Output = Result<(), RadioError>> + Send;
 }

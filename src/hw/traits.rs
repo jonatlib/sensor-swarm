@@ -6,7 +6,7 @@
 pub trait DebugInterface {
     /// Initialize the debug interface
     /// This should set up the logging backend and make it ready for use
-    async fn init(&mut self) -> Result<(), &'static str>;
+    fn init(&mut self) -> impl core::future::Future<Output = Result<(), &'static str>> + Send;
 }
 
 /// Trait for abstracting device management operations
