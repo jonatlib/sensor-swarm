@@ -16,3 +16,29 @@ pub trait DeviceManagement {
     /// This allows for easy firmware updates via USB DFU
     fn reboot_to_bootloader(&self) -> !;
 }
+
+/// Trait for abstracting GPIO operations
+/// Implementations should provide hardware-agnostic GPIO control
+pub trait GpioPin {
+    /// Set the pin to high level
+    fn set_high(&mut self);
+    
+    /// Set the pin to low level
+    fn set_low(&mut self);
+    
+    /// Toggle the pin state
+    fn toggle(&mut self);
+}
+
+/// Trait for abstracting LED operations
+/// Implementations should provide hardware-agnostic LED control
+pub trait Led {
+    /// Turn the LED on
+    fn on(&mut self);
+    
+    /// Turn the LED off
+    fn off(&mut self);
+    
+    /// Toggle the LED state
+    fn toggle(&mut self);
+}

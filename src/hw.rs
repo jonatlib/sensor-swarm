@@ -13,4 +13,5 @@ pub mod blackpill_f401;
 pub use traits::*;
 
 #[cfg(feature = "blackpill-f401")]
-pub use blackpill_f401::UsbManager;
+pub use blackpill_f401::{BlackPillLed, MockDeviceManager};
+// pub use blackpill_f401::UsbManager;  // Temporarily disabled

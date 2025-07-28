@@ -2,6 +2,7 @@
 // This module defines the data structures for our custom radio packet format
 
 use defmt::Format;
+use bitfield_struct::bitfield;
 
 /// Maximum size of the packet payload in bytes
 pub const MAX_PAYLOAD_SIZE: usize = 32;
@@ -26,79 +27,66 @@ pub struct Header {
 }
 
 /// Control flags and packet type information
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Format)]
-#[repr(transparent)]
-pub struct PacketControl(pub u8);
+#[bitfield(u8)]
+#[derive(PartialEq, Eq)]
+pub struct PacketControl {
+    /// Acknowledgment request flag
+    pub ack_request: bool,
+    /// Acknowledgment response flag  
+    pub ack_response: bool,
+    /// Emergency/priority flag
+    pub emergency: bool,
+    /// Retransmission flag
+    pub retransmit: bool,
+    /// Reserved bits (unused)
+    #[bits(4)]
+    _reserved: u8,
+}
 
 impl PacketControl {
-    /// Acknowledgment request flag bit position
-    const ACK_REQUEST_BIT: u8 = 0;
-    /// Acknowledgment response flag bit position
-    const ACK_RESPONSE_BIT: u8 = 1;
-    /// Emergency/priority flag bit position
-    const EMERGENCY_BIT: u8 = 2;
-    /// Retransmission flag bit position
-    const RETRANSMIT_BIT: u8 = 3;
-
     /// Create a new PacketControl with default values
     pub const fn new() -> Self {
-        Self(0)
+        Self::new_with_raw_value(0)
     }
 
     /// Set the acknowledgment request flag
     pub fn set_ack_request(&mut self, value: bool) {
-        if value {
-            self.0 |= 1 << Self::ACK_REQUEST_BIT;
-        } else {
-            self.0 &= !(1 << Self::ACK_REQUEST_BIT);
-        }
+        self.set_ack_request(value);
     }
 
     /// Check if acknowledgment is requested
     pub fn is_ack_request(&self) -> bool {
-        (self.0 & (1 << Self::ACK_REQUEST_BIT)) != 0
+        self.ack_request()
     }
 
     /// Set the acknowledgment response flag
     pub fn set_ack_response(&mut self, value: bool) {
-        if value {
-            self.0 |= 1 << Self::ACK_RESPONSE_BIT;
-        } else {
-            self.0 &= !(1 << Self::ACK_RESPONSE_BIT);
-        }
+        self.set_ack_response(value);
     }
 
     /// Check if this is an acknowledgment response
     pub fn is_ack(&self) -> bool {
-        (self.0 & (1 << Self::ACK_RESPONSE_BIT)) != 0
+        self.ack_response()
     }
 
     /// Set the emergency/priority flag
     pub fn set_emergency(&mut self, value: bool) {
-        if value {
-            self.0 |= 1 << Self::EMERGENCY_BIT;
-        } else {
-            self.0 &= !(1 << Self::EMERGENCY_BIT);
-        }
+        self.set_emergency(value);
     }
 
     /// Check if this is an emergency packet
     pub fn is_emergency(&self) -> bool {
-        (self.0 & (1 << Self::EMERGENCY_BIT)) != 0
+        self.emergency()
     }
 
     /// Set the retransmission flag
     pub fn set_retransmit(&mut self, value: bool) {
-        if value {
-            self.0 |= 1 << Self::RETRANSMIT_BIT;
-        } else {
-            self.0 &= !(1 << Self::RETRANSMIT_BIT);
-        }
+        self.set_retransmit(value);
     }
 
     /// Check if this is a retransmitted packet
     pub fn is_retransmit(&self) -> bool {
-        (self.0 & (1 << Self::RETRANSMIT_BIT)) != 0
+        self.retransmit()
     }
 }
 
@@ -107,6 +95,32 @@ impl Default for PacketControl {
         Self::new()
     }
 }
+
+impl defmt::Format for PacketControl {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "PacketControl {{ ack_request: {}, ack_response: {}, emergency: {}, retransmit: {} }}", 
+                     self.ack_request(), self.ack_response(), self.emergency(), self.retransmit())
+    }
+}
+
+impl core::fmt::Debug for PacketControl {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("PacketControl")
+            .field("ack_request", &self.ack_request())
+            .field("ack_response", &self.ack_response())
+            .field("emergency", &self.emergency())
+            .field("retransmit", &self.retransmit())
+            .finish()
+    }
+}
+
+impl Clone for PacketControl {
+    fn clone(&self) -> Self {
+        Self::new_with_raw_value(self.raw_value())
+    }
+}
+
+impl Copy for PacketControl {}
 
 /// Complete radio packet structure
 #[derive(Debug, Clone, PartialEq, Eq, Format)]
