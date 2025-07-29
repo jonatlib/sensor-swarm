@@ -2,6 +2,8 @@
 /// Provides hardware-specific device setup and configuration
 
 use crate::hw::traits::DeviceManagement;
+use crate::hw::blackpill_f401::led::BlackPillLed;
+use crate::hw::blackpill_f401::usb::UsbManager;
 use embassy_stm32::{Config, rcc};
 use defmt::*;
 use crate::usb_log;
@@ -89,6 +91,38 @@ impl DeviceManagement for BlackPillDevice {
     type Timer = embassy_stm32::peripherals::TIM2;
     /// SPI peripheral type - using SPI1 as default SPI
     type Spi = embassy_stm32::peripherals::SPI1;
+    /// LED type - using BlackPillLed for PC13
+    type Led = BlackPillLed;
+    /// USB Manager type - using UsbManager for USB communication
+    type UsbManager = UsbManager;
+    
+    /// Initialize all hardware peripherals from embassy_stm32::init output
+    /// This method takes the peripherals struct and initializes all hardware-specific components
+    /// Returns initialized LED and USB manager instances
+    async fn init_peripherals(&mut self, peripherals: embassy_stm32::Peripherals) -> Result<(Self::Led, Self::UsbManager), &'static str> {
+        usb_log!(info, "Initializing BlackPill peripherals...");
+        
+        // Initialize LED using PC13 (built-in LED on STM32F401 Black Pill)
+        let led = BlackPillLed::new(peripherals.PC13);
+        usb_log!(info, "LED initialized on PC13");
+        
+        // Initialize USB manager
+        let mut usb_manager = UsbManager::new();
+        
+        // Initialize USB with the required peripherals (PA11=D-, PA12=D+)
+        match usb_manager.init_with_peripheral(peripherals.USB_OTG_FS, peripherals.PA12, peripherals.PA11).await {
+            Ok(_) => {
+                usb_log!(info, "USB manager initialized successfully");
+            },
+            Err(e) => {
+                usb_log!(warn, "Failed to initialize USB manager: {}", e);
+                return Err("Failed to initialize USB manager");
+            }
+        }
+        
+        usb_log!(info, "All BlackPill peripherals initialized successfully");
+        Ok((led, usb_manager))
+    }
     
     /// Initialize a timer peripheral and return it pre-configured
     /// Returns TIM2 peripheral that can be used directly with Embassy timer functionality

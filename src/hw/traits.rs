@@ -16,6 +16,15 @@ pub trait DeviceManagement {
     type Timer: embassy_stm32::Peripheral;
     /// SPI peripheral type that will be returned by init_spi
     type Spi: embassy_stm32::Peripheral;
+    /// LED type that will be returned by init_peripherals
+    type Led: crate::hw::traits::Led;
+    /// USB Manager type that will be returned by init_peripherals
+    type UsbManager: crate::hw::traits::UsbCommunication + crate::hw::traits::UsbLogger;
+    
+    /// Initialize all hardware peripherals from embassy_stm32::init output
+    /// This method takes the peripherals struct and initializes all hardware-specific components
+    /// Returns initialized LED and USB manager instances
+    fn init_peripherals(&mut self, peripherals: embassy_stm32::Peripherals) -> impl core::future::Future<Output = Result<(Self::Led, Self::UsbManager), &'static str>> + Send;
     
     /// Reboot the device into the DFU bootloader
     /// This allows for easy firmware updates via USB DFU
