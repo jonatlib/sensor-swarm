@@ -797,6 +797,7 @@ dependencies = [
  "embassy-stm32",
  "embassy-time",
  "embassy-usb",
+ "heapless 0.8.0",
  "panic-probe",
 ]
 

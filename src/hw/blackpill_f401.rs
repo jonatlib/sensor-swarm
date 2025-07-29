@@ -1,8 +1,15 @@
 /// STM32F401 Black Pill hardware implementation module
 /// Contains platform-specific implementations for the Black Pill board
 
-// pub mod usb;  // Temporarily disabled due to USB feature issues
+pub mod device;
 pub mod gpio;
+pub mod led;
+pub mod flash;
+pub mod usb;
 
-// pub use usb::UsbManager;  // Temporarily disabled
-pub use gpio::{BlackPillLed, MockDeviceManager};
+// Re-export commonly used types
+pub use device::{BlackPillDevice, DeviceInfo};
+pub use gpio::{BlackPillGpioInit, BlackPillGpioManager, GpioPinInfo};
+pub use led::{BlackPillLed, BlackPillPwmLed, BlackPillLedManager, LedInfo};
+pub use flash::{BlackPillFlashStorage, BlackPillFlashManager, BlackPillKeyValueStore, FlashInfo, FlashStorageInfo};
+pub use usb::UsbManager;

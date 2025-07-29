@@ -13,5 +13,15 @@ pub mod blackpill_f401;
 pub use traits::*;
 
 #[cfg(feature = "blackpill-f401")]
-pub use blackpill_f401::{BlackPillLed, MockDeviceManager};
-// pub use blackpill_f401::UsbManager;  // Temporarily disabled
+pub use blackpill_f401::{
+    // Device management
+    BlackPillDevice, DeviceInfo,
+    // GPIO
+    BlackPillGpioInit, BlackPillGpioManager, GpioPinInfo,
+    // LED with PWM support
+    BlackPillLed, BlackPillPwmLed, BlackPillLedManager, LedInfo,
+    // Flash/EEPROM
+    BlackPillFlashStorage, BlackPillFlashManager, BlackPillKeyValueStore, FlashInfo, FlashStorageInfo,
+    // USB Communication
+    UsbManager,
+};
