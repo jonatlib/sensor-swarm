@@ -25,7 +25,7 @@ async fn main(spawner: Spawner) {
     // Initialize all hardware peripherals using hardware abstraction
     let (led, usb_manager) = match device_manager.init_peripherals(p).await {
         Ok((led, usb_manager)) => {
-            info!("Hardware peripherals initialized successfully");
+            usb_log!(info, "Hardware peripherals initialized successfully");
             
             // Initialize USB logging bridge to forward defmt logs to USB
             // Note: In a real implementation, we'd need to handle the static lifetime properly

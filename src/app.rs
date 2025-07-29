@@ -4,7 +4,6 @@
 
 use crate::hw::traits::{Led, DeviceManagement};
 use embassy_time::Timer;
-use defmt::info;
 use crate::usb_log;
 
 /// Main application structure that holds the hardware abstractions
@@ -33,8 +32,8 @@ where
     /// Run the main application loop
     /// This is the core application logic that is hardware-agnostic
     pub async fn run(&mut self) {
-        // Use regular defmt for initial startup messages
-        info!("Sensor swarm node starting with USB debugging...");
+        // Use usb_log! since USB is already initialized when app runs
+        usb_log!(info, "Sensor swarm node starting with USB debugging...");
         
         // Use usb_log! to send messages to both RTT and USB
         usb_log!(info, "USB Serial debug interface is active!");
@@ -50,12 +49,8 @@ where
             
             counter += 1;
             
-            // Alternate between regular defmt and USB logging to show both work
-            if counter % 2 == 0 {
-                usb_log!(info, "USB+RTT Heartbeat #{}", counter);
-            } else {
-                info!("RTT-only Heartbeat #{}", counter);
-            }
+            // Use consistent USB logging since USB is initialized
+            usb_log!(info, "Heartbeat #{}", counter);
             
             // Optional: Reboot to DFU bootloader after 10 seconds (10 heartbeats)
             if counter >= 10 {
