@@ -9,6 +9,7 @@ use embassy_stm32::timer::{Channel, CountingMode};
 use embassy_stm32::time::Hertz;
 use embassy_stm32::Peripheral;
 use defmt::*;
+use crate::usb_log;
 
 /// Built-in LED implementation for STM32F401 Black Pill with PWM support
 /// The built-in LED is connected to PC13 and is active low
@@ -84,7 +85,7 @@ impl Led for BlackPillLed {
             }
         }
         
-        info!("LED brightness set to: {}", brightness);
+        usb_log!(info, "LED brightness set to: {}", brightness);
     }
 }
 
@@ -168,13 +169,13 @@ impl BlackPillLedManager {
 
     /// Initialize the LED manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        info!("Initializing LED manager...");
+        usb_log!(info, "Initializing LED manager...");
         
         // LED initialization is handled per-LED basis
         // This method can be used for any global LED setup if needed
         
         self.initialized = true;
-        info!("LED manager initialized successfully");
+        usb_log!(info, "LED manager initialized successfully");
         Ok(())
     }
 

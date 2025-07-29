@@ -4,6 +4,7 @@
 use crate::hw::traits::FlashStorage;
 use embassy_stm32::flash::{Flash, Blocking};
 use defmt::*;
+use crate::usb_log;
 
 /// Flash-based EEPROM implementation for STM32F401 Black Pill
 /// Uses the last sector of Flash memory for persistent storage
@@ -30,8 +31,8 @@ impl BlackPillFlashStorage {
 
     /// Create a new Flash storage instance
     pub fn new(flash: Flash<'static, Blocking>) -> Self {
-        info!("Initializing Flash storage...");
-        info!("EEPROM region: 0x{:08X} - 0x{:08X} ({} KB)", 
+        usb_log!(info, "Initializing Flash storage...");
+        usb_log!(info, "EEPROM region: 0x{:08X} - 0x{:08X} ({} KB)", 
               Self::EEPROM_SECTOR_START, 
               Self::EEPROM_SECTOR_START + Self::EEPROM_STORAGE_SIZE,
               Self::EEPROM_STORAGE_SIZE / 1024);
@@ -87,11 +88,11 @@ impl BlackPillFlashStorage {
 
     /// Format the entire storage region (erase all sectors)
     pub fn format(&mut self) -> Result<(), &'static str> {
-        info!("Formatting Flash storage region...");
+        usb_log!(info, "Formatting Flash storage region...");
         
         match self.flash.blocking_erase(self.storage_start_address, self.storage_start_address + self.sector_size) {
             Ok(_) => {
-                info!("Flash storage formatted successfully");
+                usb_log!(info, "Flash storage formatted successfully");
                 Ok(())
             }
             Err(_) => {
@@ -152,11 +153,11 @@ impl FlashStorage for BlackPillFlashStorage {
         // For STM32F401, we erase the entire sector containing the address
         let abs_address = self.to_absolute_address(address);
         
-        info!("Erasing Flash sector containing address 0x{:08X}", abs_address);
+        usb_log!(info, "Erasing Flash sector containing address 0x{:08X}", abs_address);
         
         match self.flash.blocking_erase(self.storage_start_address, self.storage_start_address + self.sector_size) {
             Ok(_) => {
-                info!("Flash sector erased successfully");
+                usb_log!(info, "Flash sector erased successfully");
                 Ok(())
             }
             Err(_) => {
@@ -190,13 +191,13 @@ impl BlackPillFlashManager {
 
     /// Initialize the Flash manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        info!("Initializing Flash manager...");
+        usb_log!(info, "Initializing Flash manager...");
         
         // Flash initialization is handled per-instance basis
         // This method can be used for any global Flash setup if needed
         
         self.initialized = true;
-        info!("Flash manager initialized successfully");
+        usb_log!(info, "Flash manager initialized successfully");
         Ok(())
     }
 
@@ -272,15 +273,15 @@ impl BlackPillKeyValueStore {
 
     /// Initialize the key-value store
     pub fn init(&mut self) -> Result<(), &'static str> {
-        info!("Initializing key-value store...");
+        usb_log!(info, "Initializing key-value store...");
         
         // Check if the storage region is formatted
         match self.storage.is_erased(0, 1024) {
             Ok(true) => {
-                info!("Storage region is clean, ready for use");
+                usb_log!(info, "Storage region is clean, ready for use");
             }
             Ok(false) => {
-                info!("Storage region contains data");
+                usb_log!(info, "Storage region contains data");
             }
             Err(e) => {
                 error!("Failed to check storage region: {}", e);
@@ -289,7 +290,7 @@ impl BlackPillKeyValueStore {
         }
         
         self.initialized = true;
-        info!("Key-value store initialized successfully");
+        usb_log!(info, "Key-value store initialized successfully");
         Ok(())
     }
 
@@ -304,7 +305,7 @@ impl BlackPillKeyValueStore {
             return Err("Key or value too large");
         }
 
-        info!("Storing key '{}' with {} bytes", key, value.len());
+        usb_log!(info, "Storing key '{}' with {} bytes", key, value.len());
         
         // Simple implementation: store at fixed offset based on key hash
         let key_hash = key.bytes().fold(0u32, |acc, b| acc.wrapping_add(b as u32)) % 1000;

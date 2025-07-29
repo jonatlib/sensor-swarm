@@ -6,6 +6,7 @@ pub mod gpio;
 pub mod led;
 pub mod flash;
 pub mod usb;
+pub mod usb_defmt_logger;
 
 // Re-export commonly used types
 pub use device::{BlackPillDevice, DeviceInfo};

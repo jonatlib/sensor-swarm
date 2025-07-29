@@ -4,6 +4,7 @@
 use crate::hw::traits::DeviceManagement;
 use embassy_stm32::{Config, rcc};
 use defmt::*;
+use crate::usb_log;
 
 /// Device manager for STM32F401 Black Pill
 /// Handles device initialization, clock configuration, and system management
@@ -22,7 +23,7 @@ impl BlackPillDevice {
     /// Initialize the device with proper clock configuration
     /// This sets up the system clocks, HSE oscillator, and PLL
     pub fn init(&mut self) -> Result<Config, &'static str> {
-        info!("Initializing STM32F401 Black Pill device...");
+        usb_log!(info, "Initializing STM32F401 Black Pill device...");
 
         let mut config = Config::default();
         
@@ -53,8 +54,8 @@ impl BlackPillDevice {
         config.rcc.sys = rcc::Sysclk::PLL1_P;
 
         self.initialized = true;
-        info!("Device initialization completed successfully");
-        info!("System clock: 84MHz, APB1: 42MHz, APB2: 84MHz, USB: 48MHz");
+        usb_log!(info, "Device initialization completed successfully");
+        usb_log!(info, "System clock: 84MHz, APB1: 42MHz, APB2: 84MHz, USB: 48MHz");
         
         Ok(config)
     }
@@ -78,7 +79,7 @@ impl BlackPillDevice {
 
     /// Perform a soft reset of the device
     pub fn soft_reset(&self) -> ! {
-        info!("Performing soft reset...");
+        usb_log!(info, "Performing soft reset...");
         cortex_m::peripheral::SCB::sys_reset();
     }
 }
@@ -92,33 +93,33 @@ impl DeviceManagement for BlackPillDevice {
     /// Initialize a timer peripheral and return it pre-configured
     /// Returns TIM2 peripheral that can be used directly with Embassy timer functionality
     fn init_timer(&mut self) -> Result<Self::Timer, &'static str> {
-        info!("Initializing TIM2 peripheral for timer functionality");
+        usb_log!(info, "Initializing TIM2 peripheral for timer functionality");
         
         // In a full implementation, this would take the TIM2 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
         
-        warn!("Timer peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
+        usb_log!(warn, "Timer peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
         Err("Timer peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
     }
     
     /// Initialize an SPI peripheral and return it pre-configured
     /// Returns SPI1 peripheral that can be used directly with Embassy SPI functionality
     fn init_spi(&mut self) -> Result<Self::Spi, &'static str> {
-        info!("Initializing SPI1 peripheral for SPI functionality");
+        usb_log!(info, "Initializing SPI1 peripheral for SPI functionality");
         
         // In a full implementation, this would take the SPI1 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
         
-        warn!("SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
+        usb_log!(warn, "SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
         Err("SPI peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
     }
 
     /// Reboot the device into DFU bootloader mode
     /// This triggers a jump to the STM32 built-in DFU bootloader
     fn reboot_to_bootloader(&self) -> ! {
-        info!("Rebooting to DFU bootloader...");
+        usb_log!(info, "Rebooting to DFU bootloader...");
         
         // For STM32F401, we need to:
         // 1. Set a magic value in RAM that the bootloader checks
