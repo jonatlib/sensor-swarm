@@ -4,10 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["blackpill-f401", "embedded", "defmt"]
+default = ["blackpill-f401", "embedded"]
 blackpill-f401 = []
-std = []
-defmt = []
 embedded = [
     "embassy-stm32",
     "embassy-usb",

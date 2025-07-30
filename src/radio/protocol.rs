@@ -2,7 +2,6 @@
 // This module defines the data structures for our custom radio packet format
 
 use bitfield_struct::bitfield;
-#[cfg(feature = "defmt")]
 use defmt::Format;
 
 /// Maximum size of the packet payload in bytes
@@ -12,8 +11,7 @@ pub const MAX_PAYLOAD_SIZE: usize = 32;
 pub const PACKET_SIZE_BYTES: usize = core::mem::size_of::<Header>() + MAX_PAYLOAD_SIZE;
 
 /// Packet header containing routing and control information
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(Format))]
+#[derive(Debug, Clone, PartialEq, Eq, Format)]
 #[repr(C)]
 pub struct Header {
     /// Unique identifier of the sender node
@@ -30,7 +28,7 @@ pub struct Header {
 
 /// Control flags and packet type information
 #[bitfield(u8)]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Format)]
 pub struct PacketControl {
     /// Acknowledgment request flag
     pub ack_request: bool,
@@ -67,23 +65,9 @@ impl PacketControl {
     }
 }
 
-#[cfg(feature = "defmt")]
-impl defmt::Format for PacketControl {
-    fn format(&self, fmt: defmt::Formatter) {
-        defmt::write!(
-            fmt,
-            "PacketControl {{ ack_request: {}, ack_response: {}, emergency: {}, retransmit: {} }}",
-            self.ack_request(),
-            self.ack_response(),
-            self.emergency(),
-            self.retransmit()
-        )
-    }
-}
 
 /// Complete radio packet structure
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(Format))]
+#[derive(Debug, Clone, PartialEq, Eq, Format)]
 pub struct Packet {
     /// Packet header with routing and control information
     pub header: Header,
