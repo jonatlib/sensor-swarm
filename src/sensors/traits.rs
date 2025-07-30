@@ -2,6 +2,7 @@
 // This module defines generic traits for environmental sensors
 
 use defmt::Format;
+use bitfield_struct::bitfield;
 
 /// Error types for sensor operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Format)]
@@ -58,7 +59,8 @@ pub struct EnvironmentalData {
 }
 
 /// Validity flags for sensor data
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Format)]
+#[bitfield(u8)]
+#[derive(PartialEq, Eq)]
 pub struct DataValidity {
     /// Temperature reading is valid
     pub temperature_valid: bool,
@@ -68,43 +70,37 @@ pub struct DataValidity {
     pub pressure_valid: bool,
     /// Light reading is valid
     pub light_valid: bool,
+    /// Reserved bits (unused)
+    #[bits(4)]
+    _reserved: u8,
 }
 
 impl DataValidity {
-    /// Create a new DataValidity with all fields set to false
-    pub const fn new() -> Self {
-        Self {
-            temperature_valid: false,
-            humidity_valid: false,
-            pressure_valid: false,
-            light_valid: false,
-        }
-    }
-    
     /// Create a DataValidity with all fields set to true
     pub const fn all_valid() -> Self {
-        Self {
-            temperature_valid: true,
-            humidity_valid: true,
-            pressure_valid: true,
-            light_valid: true,
-        }
+        Self::new()
+            .with_temperature_valid(true)
+            .with_humidity_valid(true)
+            .with_pressure_valid(true)
+            .with_light_valid(true)
     }
     
     /// Check if any sensor data is valid
     pub fn has_valid_data(&self) -> bool {
-        self.temperature_valid || self.humidity_valid || self.pressure_valid || self.light_valid
+        self.temperature_valid() || self.humidity_valid() || self.pressure_valid() || self.light_valid()
     }
     
     /// Check if all sensor data is valid
     pub fn all_data_valid(&self) -> bool {
-        self.temperature_valid && self.humidity_valid && self.pressure_valid && self.light_valid
+        self.temperature_valid() && self.humidity_valid() && self.pressure_valid() && self.light_valid()
     }
 }
 
-impl Default for DataValidity {
-    fn default() -> Self {
-        Self::new()
+#[cfg(feature = "defmt")]
+impl defmt::Format for DataValidity {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "DataValidity {{ temperature_valid: {}, humidity_valid: {}, pressure_valid: {}, light_valid: {} }}", 
+                     self.temperature_valid(), self.humidity_valid(), self.pressure_valid(), self.light_valid())
     }
 }
 
@@ -139,25 +135,25 @@ impl EnvironmentalData {
     /// Set temperature from floating-point Celsius value
     pub fn set_temperature_celsius(&mut self, temp_c: f32) {
         self.temperature_celsius_x100 = (temp_c * 100.0) as i32;
-        self.validity.temperature_valid = true;
+        self.validity = self.validity.with_temperature_valid(true);
     }
     
     /// Set humidity from floating-point percentage value
     pub fn set_humidity_percent(&mut self, humidity: f32) {
         self.humidity_percent_x100 = (humidity * 100.0) as u32;
-        self.validity.humidity_valid = true;
+        self.validity = self.validity.with_humidity_valid(true);
     }
     
     /// Set light intensity from floating-point lux value
     pub fn set_light_lux(&mut self, lux: f32) {
         self.light_lux_x10 = (lux * 10.0) as u32;
-        self.validity.light_valid = true;
+        self.validity = self.validity.with_light_valid(true);
     }
     
     /// Set pressure in Pascals
     pub fn set_pressure_pa(&mut self, pressure: u32) {
         self.pressure_pa = pressure;
-        self.validity.pressure_valid = true;
+        self.validity = self.validity.with_pressure_valid(true);
     }
 }
 
