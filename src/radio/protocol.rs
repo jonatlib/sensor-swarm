@@ -137,6 +137,22 @@ impl Packet {
 #[cfg(test)]
 #[defmt_test::tests]
 mod tests {
+    //! Unit tests for radio protocol data structures and logic.
+    //! 
+    //! These tests are hardware-agnostic and test pure logic, data structures,
+    //! serialization, and protocol behavior. They can run on QEMU or any target
+    //! without requiring real hardware peripherals.
+    //! 
+    //! For tests that require real hardware (GPIO, SPI, timers, etc.), use the
+    //! "hil" (Hardware-in-the-Loop) feature gate:
+    //! ```rust
+    //! #[cfg(feature = "hil")]
+    //! #[test]
+    //! async fn test_hardware_functionality() {
+    //!     // Test code that requires real hardware
+    //! }
+    //! ```
+    
     use super::*;
 
     #[test]

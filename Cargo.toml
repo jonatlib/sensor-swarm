@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = ["blackpill-f401", "embedded"]
 blackpill-f401 = []
+hil = []
 embedded = [
     "embassy-stm32",
     "embassy-usb",
