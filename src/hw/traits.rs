@@ -20,24 +20,27 @@ pub trait DeviceManagement {
     type Led: crate::hw::traits::Led;
     /// USB Manager type that will be returned by init_peripherals
     type UsbManager: crate::hw::traits::UsbCommunication + crate::hw::traits::UsbLogger;
-    
+
     /// Initialize all hardware peripherals from embassy_stm32::init output
     /// This method takes the peripherals struct and initializes all hardware-specific components
     /// Returns initialized LED and USB manager instances
-    fn init_peripherals(&mut self, peripherals: embassy_stm32::Peripherals) -> impl core::future::Future<Output = Result<(Self::Led, Self::UsbManager), &'static str>> + Send;
-    
+    fn init_peripherals(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> impl core::future::Future<Output = Result<(Self::Led, Self::UsbManager), &'static str>> + Send;
+
     /// Reboot the device normally
     /// This performs a standard system reset
     fn reboot(&self) -> !;
-    
+
     /// Reboot the device into the DFU bootloader
     /// This allows for easy firmware updates via USB DFU
     fn reboot_to_bootloader(&self) -> !;
-    
+
     /// Initialize a timer peripheral and return it pre-configured
     /// This returns a configured timer that can be used directly with Embassy timer functionality
     fn init_timer(&mut self) -> Result<Self::Timer, &'static str>;
-    
+
     /// Initialize an SPI peripheral and return it pre-configured
     /// This returns a configured SPI that can be used directly with Embassy SPI functionality
     fn init_spi(&mut self) -> Result<Self::Spi, &'static str>;
@@ -51,13 +54,13 @@ pub trait DeviceManagement {
 pub trait Led {
     /// Turn the LED on
     fn on(&mut self);
-    
+
     /// Turn the LED off
     fn off(&mut self);
-    
+
     /// Toggle the LED state
     fn toggle(&mut self);
-    
+
     /// Set LED brightness using PWM (0-255, where 0 is off and 255 is full brightness)
     fn set_brightness(&mut self, brightness: u8);
 }
@@ -66,11 +69,17 @@ pub trait Led {
 /// Implementations should provide hardware-agnostic USB byte send/receive
 pub trait UsbCommunication {
     /// Send bytes over USB
-    fn send_bytes(&mut self, data: &[u8]) -> impl core::future::Future<Output = Result<(), &'static str>>;
-    
+    fn send_bytes(
+        &mut self,
+        data: &[u8],
+    ) -> impl core::future::Future<Output = Result<(), &'static str>>;
+
     /// Receive bytes from USB (non-blocking)
-    fn receive_bytes(&mut self, buffer: &mut [u8]) -> impl core::future::Future<Output = Result<usize, &'static str>>;
-    
+    fn receive_bytes(
+        &mut self,
+        buffer: &mut [u8],
+    ) -> impl core::future::Future<Output = Result<usize, &'static str>>;
+
     /// Check if USB is connected and ready
     fn is_connected(&self) -> bool;
 }
@@ -79,10 +88,16 @@ pub trait UsbCommunication {
 /// Implementations should provide hardware-agnostic logging over USB serial
 pub trait UsbLogger {
     /// Log a message over USB serial
-    fn log(&mut self, message: &str) -> impl core::future::Future<Output = Result<(), &'static str>>;
-    
+    fn log(
+        &mut self,
+        message: &str,
+    ) -> impl core::future::Future<Output = Result<(), &'static str>>;
+
     /// Log formatted message over USB serial
-    fn log_fmt(&mut self, args: core::fmt::Arguments<'_>) -> impl core::future::Future<Output = Result<(), &'static str>>;
+    fn log_fmt(
+        &mut self,
+        args: core::fmt::Arguments<'_>,
+    ) -> impl core::future::Future<Output = Result<(), &'static str>>;
 }
 
 // Timer functionality is provided directly by Embassy Timer (embassy_time::Timer)
@@ -96,16 +111,16 @@ pub trait UsbLogger {
 pub trait FlashStorage {
     /// Read data from flash at specified address
     fn read(&self, address: u32, buffer: &mut [u8]) -> Result<(), &'static str>;
-    
+
     /// Write data to flash at specified address
     fn write(&mut self, address: u32, data: &[u8]) -> Result<(), &'static str>;
-    
+
     /// Erase flash sector containing the specified address
     fn erase_sector(&mut self, address: u32) -> Result<(), &'static str>;
-    
+
     /// Get the size of a flash sector
     fn sector_size(&self) -> u32;
-    
+
     /// Get the total flash size available for storage
     fn total_size(&self) -> u32;
 }

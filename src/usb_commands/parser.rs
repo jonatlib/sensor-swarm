@@ -1,8 +1,7 @@
 /// Command Parser Module
-/// 
+///
 /// This module handles parsing of USB commands and defines all supported command types.
 /// It provides a clean interface for converting raw command strings into structured command enums.
-
 use heapless::String;
 
 /// Maximum command length in bytes
@@ -41,7 +40,7 @@ pub enum SensorType {
 }
 
 /// Command Parser
-/// 
+///
 /// Handles parsing of raw command strings into structured UsbCommand enums.
 /// Supports case-insensitive command matching.
 pub struct CommandParser;
@@ -70,7 +69,10 @@ impl CommandParser {
             if command_str.len() != cmd.len() {
                 return false;
             }
-            command_str.chars().zip(cmd.chars()).all(|(a, b)| a.to_ascii_lowercase() == b.to_ascii_lowercase())
+            command_str
+                .chars()
+                .zip(cmd.chars())
+                .all(|(a, b)| a.to_ascii_lowercase() == b.to_ascii_lowercase())
         };
 
         if matches_command("READ_SENSORS") || matches_command("SENSORS") {
@@ -93,7 +95,10 @@ impl CommandParser {
             UsbCommand::Help
         } else if matches_command("REBOOT") || matches_command("REBOOT_CPU") {
             UsbCommand::RebootCpu
-        } else if matches_command("REBOOT_DFU") || matches_command("REBOOT_CPU_DFU") || matches_command("DFU") {
+        } else if matches_command("REBOOT_DFU")
+            || matches_command("REBOOT_CPU_DFU")
+            || matches_command("DFU")
+        {
             UsbCommand::RebootCpuToDfu
         } else {
             let mut unknown_cmd = String::new();

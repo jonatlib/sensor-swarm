@@ -1,18 +1,17 @@
 /// System Commands Handler Module
-/// 
+///
 /// This module handles all system-related USB commands including debug info,
 /// device status, ping, and help commands. It provides system-level information
 /// and utility functions.
-
 use crate::hw::traits::UsbCommunication;
-use crate::usb_commands::parser::{UsbCommand, CommandParser};
-use crate::usb_commands::responses::{UsbResponse, DebugInfo, DeviceStatus};
+use crate::usb_commands::parser::{CommandParser, UsbCommand};
+use crate::usb_commands::responses::{DebugInfo, DeviceStatus, UsbResponse};
 use heapless::String;
 
 /// System Commands Handler
-/// 
+///
 /// Handles processing of system-related commands and generates appropriate responses.
-pub struct SystemCommandHandler<U> 
+pub struct SystemCommandHandler<U>
 where
     U: UsbCommunication,
 {
@@ -42,28 +41,23 @@ where
     }
 
     /// Process a system-related command and generate a response
-    pub async fn process_system_command(&mut self, command: UsbCommand, sensor_count: u8, sensor_ready: bool) -> UsbResponse {
+    pub async fn process_system_command(
+        &mut self,
+        command: UsbCommand,
+        sensor_count: u8,
+        sensor_ready: bool,
+    ) -> UsbResponse {
         match command {
-            UsbCommand::GetDebugInfo => {
-                self.handle_debug_info(sensor_count).await
-            }
-            
-            UsbCommand::GetStatus => {
-                self.handle_status(sensor_ready).await
-            }
-            
-            UsbCommand::Ping => {
-                self.handle_ping().await
-            }
-            
-            UsbCommand::Help => {
-                self.handle_help().await
-            }
-            
-            UsbCommand::Unknown(cmd) => {
-                self.handle_unknown_command(cmd).await
-            }
-            
+            UsbCommand::GetDebugInfo => self.handle_debug_info(sensor_count).await,
+
+            UsbCommand::GetStatus => self.handle_status(sensor_ready).await,
+
+            UsbCommand::Ping => self.handle_ping().await,
+
+            UsbCommand::Help => self.handle_help().await,
+
+            UsbCommand::Unknown(cmd) => self.handle_unknown_command(cmd).await,
+
             _ => {
                 // This handler only processes system commands
                 let mut error_msg = String::new();
@@ -76,7 +70,7 @@ where
     /// Handle GetDebugInfo command
     async fn handle_debug_info(&self, sensor_count: u8) -> UsbResponse {
         let debug_info = DebugInfo {
-            uptime_ms: 0, // Would calculate actual uptime
+            uptime_ms: 0,   // Would calculate actual uptime
             free_memory: 0, // Would get actual free memory
             usb_connected: self.usb_manager.is_connected(),
             sensor_count,

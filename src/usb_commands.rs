@@ -1,21 +1,20 @@
 /// USB Command Module
-/// 
+///
 /// This module provides a hardware-agnostic USB command interface that allows
 /// communication with the device over USB serial. It supports:
 /// - Reading sensor data
 /// - Getting debug information
 /// - Extensible command system for future functionality
-/// 
+///
 /// The module uses the existing USB traits and embassy task system for async operation.
 /// It's designed to coexist with USB logging functionality.
-/// 
+///
 /// The module is split into submodules for better organization:
 /// - parser: Command parsing and supported command definitions
 /// - responses: Response types and formatting
 /// - sensor_commands: Sensor-related command handlers
 /// - system_commands: System-related command handlers
-
-use crate::hw::traits::{UsbCommunication, UsbLogger, DeviceManagement};
+use crate::hw::traits::{DeviceManagement, UsbCommunication, UsbLogger};
 use crate::sensors::traits::EnvironmentalSensor;
 use defmt::*;
 use heapless::Vec;
@@ -27,8 +26,8 @@ pub mod sensor_commands;
 pub mod system_commands;
 
 // Re-export commonly used types
-pub use parser::{UsbCommand, SensorType, CommandParser};
-pub use responses::{UsbResponse, DebugInfo, DeviceStatus, ResponseFormatter};
+pub use parser::{CommandParser, SensorType, UsbCommand};
+pub use responses::{DebugInfo, DeviceStatus, ResponseFormatter, UsbResponse};
 pub use sensor_commands::SensorCommandHandler;
 pub use system_commands::SystemCommandHandler;
 
@@ -36,12 +35,12 @@ pub use system_commands::SystemCommandHandler;
 const COMMAND_TERMINATOR: u8 = b'\n';
 
 /// USB Command Handler
-/// 
+///
 /// This struct manages USB command processing and response generation.
 /// It's designed to be hardware-agnostic and work with any implementation
 /// of the UsbCommunication trait. It coordinates between different command
 /// handlers for better modularity.
-pub struct UsbCommandHandler<U, S, D> 
+pub struct UsbCommandHandler<U, S, D>
 where
     U: UsbCommunication + UsbLogger,
     S: EnvironmentalSensor,
@@ -86,7 +85,7 @@ where
     pub async fn initialize(&mut self) -> Result<(), &'static str> {
         // Initialize system handler
         self.system_handler.initialize().await?;
-        
+
         info!("USB Command Handler initialized");
         Ok(())
     }
@@ -124,7 +123,7 @@ where
     async fn receive_command(&mut self) -> Result<Option<UsbCommand>, &'static str> {
         // Clear the command buffer
         self.command_buffer.clear();
-        
+
         // Read bytes until we get a complete command (terminated by newline)
         let mut temp_buffer = [0u8; 32];
         loop {
@@ -157,15 +156,20 @@ where
             UsbCommand::ReadSensors | UsbCommand::ReadSensorType(_) => {
                 self.sensor_handler.process_sensor_command(command).await
             }
-            
+
             // System commands
-            UsbCommand::GetDebugInfo | UsbCommand::GetStatus | UsbCommand::Ping | 
-            UsbCommand::Help | UsbCommand::Unknown(_) => {
+            UsbCommand::GetDebugInfo
+            | UsbCommand::GetStatus
+            | UsbCommand::Ping
+            | UsbCommand::Help
+            | UsbCommand::Unknown(_) => {
                 let sensor_count = self.sensor_handler.sensor_count();
                 let sensor_ready = self.sensor_handler.is_sensor_ready();
-                self.system_handler.process_system_command(command, sensor_count, sensor_ready).await
+                self.system_handler
+                    .process_system_command(command, sensor_count, sensor_ready)
+                    .await
             }
-            
+
             // Reboot commands - these need special handling as they don't return
             UsbCommand::RebootCpu => {
                 // Send acknowledgment before rebooting
@@ -173,19 +177,19 @@ where
                 if let Err(e) = self.send_response(ack_response).await {
                     warn!("Failed to send reboot acknowledgment: {}", e);
                 }
-                
+
                 // Perform the reboot - this will not return
                 info!("Executing CPU reboot command");
                 self.device_manager.reboot();
             }
-            
+
             UsbCommand::RebootCpuToDfu => {
                 // Send acknowledgment before rebooting
                 let ack_response = UsbResponse::Ack;
                 if let Err(e) = self.send_response(ack_response).await {
                     warn!("Failed to send DFU reboot acknowledgment: {}", e);
                 }
-                
+
                 // Perform the DFU reboot - this will not return
                 info!("Executing CPU reboot to DFU mode command");
                 self.device_manager.reboot_to_bootloader();
@@ -197,14 +201,14 @@ where
     async fn send_response(&mut self, response: UsbResponse) -> Result<(), &'static str> {
         // Format the response
         let response_text = self.response_formatter.format_response(response);
-        
+
         // Convert to bytes and send
         let response_bytes = response_text.as_bytes();
         self.usb_manager.send_bytes(response_bytes).await?;
-        
+
         // Send terminator
         self.usb_manager.send_bytes(&[COMMAND_TERMINATOR]).await?;
-        
+
         Ok(())
     }
 }
@@ -222,11 +226,11 @@ where
     D: DeviceManagement,
 {
     let mut handler = UsbCommandHandler::new(usb_manager, device_manager);
-    
+
     if let Some(sensor) = sensor {
         handler.set_sensor(sensor);
     }
-    
+
     handler.initialize().await?;
     handler.run().await
 }

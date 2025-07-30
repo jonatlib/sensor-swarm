@@ -1,15 +1,14 @@
 /// PWM-based LED implementation for STM32F401 Black Pill
 /// Provides hardware-specific LED control with brightness support using PWM
-
 use crate::hw::traits::Led;
+use crate::usb_log;
+use defmt::*;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::peripherals::PC13;
+use embassy_stm32::time::Hertz;
 use embassy_stm32::timer::simple_pwm::SimplePwm;
 use embassy_stm32::timer::{Channel, CountingMode};
-use embassy_stm32::time::Hertz;
 use embassy_stm32::Peripheral;
-use defmt::*;
-use crate::usb_log;
 
 /// Built-in LED implementation for STM32F401 Black Pill with PWM support
 /// The built-in LED is connected to PC13 and is active low
@@ -25,7 +24,7 @@ impl BlackPillLed {
     pub fn new(pc13_pin: PC13) -> Self {
         // LED is active low, so start with high level (LED off)
         let pin = Output::new(pc13_pin, Level::High, Speed::Low);
-        Self { 
+        Self {
             pin,
             brightness: 255, // Full brightness by default
             is_on: false,
@@ -49,13 +48,13 @@ impl Led for BlackPillLed {
         self.pin.set_low();
         self.is_on = true;
     }
-    
+
     fn off(&mut self) {
         // LED is active low, so set pin high to turn off
         self.pin.set_high();
         self.is_on = false;
     }
-    
+
     fn toggle(&mut self) {
         if self.is_on {
             self.off();
@@ -66,11 +65,11 @@ impl Led for BlackPillLed {
 
     fn set_brightness(&mut self, brightness: u8) {
         self.brightness = brightness;
-        
+
         // For PC13 (built-in LED), we can't use hardware PWM
         // So we implement a simple on/off based on brightness threshold
         // In a real PWM implementation, this would control the duty cycle
-        
+
         if brightness == 0 {
             self.off();
         } else if brightness == 255 {
@@ -84,7 +83,7 @@ impl Led for BlackPillLed {
                 self.off();
             }
         }
-        
+
         usb_log!(info, "LED brightness set to: {}", brightness);
     }
 }
@@ -106,7 +105,7 @@ impl<T> BlackPillPwmLed<T> {
         _freq: Hertz,
     ) -> Result<Self, &'static str> {
         warn!("PWM LED functionality not available - using stub implementation");
-        
+
         Ok(Self {
             _timer: core::marker::PhantomData,
             brightness: 0,
@@ -135,11 +134,11 @@ impl<T> Led for BlackPillPwmLed<T> {
     fn on(&mut self) {
         self.set_brightness(255);
     }
-    
+
     fn off(&mut self) {
         self.set_brightness(0);
     }
-    
+
     fn toggle(&mut self) {
         if self.brightness > 0 {
             self.off();
@@ -150,7 +149,10 @@ impl<T> Led for BlackPillPwmLed<T> {
 
     fn set_brightness(&mut self, brightness: u8) {
         self.brightness = brightness;
-        debug!("PWM LED brightness set to: {} (stub implementation)", brightness);
+        debug!(
+            "PWM LED brightness set to: {} (stub implementation)",
+            brightness
+        );
     }
 }
 
@@ -162,18 +164,16 @@ pub struct BlackPillLedManager {
 impl BlackPillLedManager {
     /// Create a new LED manager
     pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
 
     /// Initialize the LED manager
     pub fn init(&mut self) -> Result<(), &'static str> {
         usb_log!(info, "Initializing LED manager...");
-        
+
         // LED initialization is handled per-LED basis
         // This method can be used for any global LED setup if needed
-        
+
         self.initialized = true;
         usb_log!(info, "LED manager initialized successfully");
         Ok(())
@@ -190,10 +190,10 @@ impl BlackPillLedManager {
             builtin_led_pin: "PC13",
             builtin_led_active_low: true,
             pwm_capable_pins: &[
-                "PA0", "PA1", "PA2", "PA3", "PA6", "PA7", "PA8", "PA9", "PA10", "PA15",
-                "PB0", "PB1", "PB3", "PB4", "PB5", "PB6", "PB7", "PB8", "PB9", "PB10",
+                "PA0", "PA1", "PA2", "PA3", "PA6", "PA7", "PA8", "PA9", "PA10", "PA15", "PB0",
+                "PB1", "PB3", "PB4", "PB5", "PB6", "PB7", "PB8", "PB9", "PB10",
             ],
-            max_pwm_frequency: 84_000_000, // Limited by system clock
+            max_pwm_frequency: 84_000_000,   // Limited by system clock
             recommended_pwm_frequency: 1000, // 1kHz for LEDs
         }
     }

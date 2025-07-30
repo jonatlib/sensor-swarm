@@ -1,8 +1,7 @@
 /// Response Types Module
-/// 
+///
 /// This module defines all response types and data structures used by USB commands.
 /// It provides a centralized location for response formatting and serialization.
-
 use crate::sensors::traits::EnvironmentalData;
 use heapless::String;
 
@@ -44,7 +43,7 @@ pub struct DeviceStatus {
 }
 
 /// Response Formatter
-/// 
+///
 /// Handles formatting of responses into strings for transmission over USB.
 pub struct ResponseFormatter;
 
@@ -57,7 +56,7 @@ impl ResponseFormatter {
     /// Format a response into a string
     pub fn format_response(&self, response: UsbResponse) -> String<MAX_RESPONSE_LENGTH> {
         let mut formatted = String::new();
-        
+
         match response {
             UsbResponse::SensorData(_data) => {
                 let _ = formatted.push_str("SENSOR_DATA:");
@@ -66,13 +65,13 @@ impl ResponseFormatter {
                 // Would format actual values here
                 let _ = formatted.push_str("25.0");
             }
-            
+
             UsbResponse::DebugInfo(_info) => {
                 let _ = formatted.push_str("DEBUG_INFO:");
                 let _ = formatted.push_str("uptime=");
                 // Would format actual values here
             }
-            
+
             UsbResponse::Status(status) => {
                 let _ = formatted.push_str("STATUS:");
                 if status.is_ready {
@@ -81,21 +80,21 @@ impl ResponseFormatter {
                     let _ = formatted.push_str("NOT_READY");
                 }
             }
-            
+
             UsbResponse::Ack => {
                 let _ = formatted.push_str("ACK");
             }
-            
+
             UsbResponse::Error(error) => {
                 let _ = formatted.push_str("ERROR:");
                 let _ = formatted.push_str(&error);
             }
-            
+
             UsbResponse::Help(help) => {
                 let _ = formatted.push_str(&help);
             }
         }
-        
+
         formatted
     }
 }

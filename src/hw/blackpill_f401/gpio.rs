@@ -1,9 +1,8 @@
+use crate::usb_log;
+use defmt::*;
 /// Enhanced GPIO implementation for STM32F401 Black Pill
 /// Provides hardware-specific GPIO initialization functions that return Embassy GPIO types
-
-use embassy_stm32::gpio::{Level, Output, Input, Pull, Speed, Pin, AnyPin};
-use defmt::*;
-use crate::usb_log;
+use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pin, Pull, Speed};
 
 /// GPIO initialization functions for STM32F401 Black Pill
 /// These functions return configured Embassy GPIO types directly
@@ -12,8 +11,17 @@ pub struct BlackPillGpioInit;
 impl BlackPillGpioInit {
     /// Create a new GPIO pin as output
     /// Returns Embassy Output type directly - no wrapper needed
-    pub fn init_output(pin: impl Pin + 'static, initial_level: Level, speed: Speed) -> Output<'static, AnyPin> {
-        usb_log!(info, "Initializing GPIO output pin with level: {:?}, speed: {:?}", initial_level, speed);
+    pub fn init_output(
+        pin: impl Pin + 'static,
+        initial_level: Level,
+        speed: Speed,
+    ) -> Output<'static, AnyPin> {
+        usb_log!(
+            info,
+            "Initializing GPIO output pin with level: {:?}, speed: {:?}",
+            initial_level,
+            speed
+        );
         Output::new(pin.degrade(), initial_level, speed)
     }
 
@@ -66,10 +74,10 @@ impl BlackPillGpioManager {
     /// Initialize the GPIO manager
     pub fn init(&mut self) -> Result<(), &'static str> {
         usb_log!(info, "Initializing GPIO manager...");
-        
+
         // GPIO initialization is handled per-pin basis
         // This method can be used for any global GPIO setup if needed
-        
+
         self.pins_initialized = true;
         usb_log!(info, "GPIO manager initialized successfully");
         Ok(())
@@ -85,11 +93,10 @@ impl BlackPillGpioManager {
         GpioPinInfo {
             total_pins: 32, // STM32F401CCU6 has 32 GPIO pins
             available_pins: &[
-                "PA0", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7",
-                "PA8", "PA9", "PA10", "PA11", "PA12", "PA13", "PA14", "PA15",
-                "PB0", "PB1", "PB2", "PB3", "PB4", "PB5", "PB6", "PB7",
-                "PB8", "PB9", "PB10", "PB12", "PB13", "PB14", "PB15",
-                "PC13", "PC14", "PC15"
+                "PA0", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PA8", "PA9", "PA10",
+                "PA11", "PA12", "PA13", "PA14", "PA15", "PB0", "PB1", "PB2", "PB3", "PB4", "PB5",
+                "PB6", "PB7", "PB8", "PB9", "PB10", "PB12", "PB13", "PB14", "PB15", "PC13", "PC14",
+                "PC15",
             ],
             special_pins: &[
                 ("PC13", "Built-in LED (active low)"),

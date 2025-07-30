@@ -15,13 +15,23 @@ pub use traits::*;
 #[cfg(feature = "blackpill-f401")]
 pub use blackpill_f401::{
     // Device management
-    BlackPillDevice, DeviceInfo,
-    // GPIO
-    BlackPillGpioInit, BlackPillGpioManager, GpioPinInfo,
-    // LED with PWM support
-    BlackPillLed, BlackPillPwmLed, BlackPillLedManager, LedInfo,
+    BlackPillDevice,
+    BlackPillFlashManager,
     // Flash/EEPROM
-    BlackPillFlashStorage, BlackPillFlashManager, BlackPillKeyValueStore, FlashInfo, FlashStorageInfo,
+    BlackPillFlashStorage,
+    // GPIO
+    BlackPillGpioInit,
+    BlackPillGpioManager,
+    BlackPillKeyValueStore,
+    // LED with PWM support
+    BlackPillLed,
+    BlackPillLedManager,
+    BlackPillPwmLed,
+    DeviceInfo,
+    FlashInfo,
+    FlashStorageInfo,
+    GpioPinInfo,
+    LedInfo,
     // USB Communication
     UsbManager,
 };

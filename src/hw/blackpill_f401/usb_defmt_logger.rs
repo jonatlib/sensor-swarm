@@ -1,11 +1,10 @@
+use crate::hw::blackpill_f401::usb::UsbManager;
 /// USB logging bridge that forwards logs to USB while keeping defmt-rtt as primary
 /// This module provides a logging bridge that can send logs to both RTT (via defmt) and USB
-
 use crate::hw::traits::UsbLogger;
-use crate::hw::blackpill_f401::usb::UsbManager;
-use defmt::*;
-use core::sync::atomic::{AtomicPtr, Ordering};
 use core::ptr;
+use core::sync::atomic::{AtomicPtr, Ordering};
+use defmt::*;
 
 /// Global USB logger instance pointer
 static USB_LOGGER: AtomicPtr<UsbManager> = AtomicPtr::new(ptr::null_mut());
@@ -66,7 +65,7 @@ pub fn queue_usb_log_message(args: &core::fmt::Arguments<'_>) {
 const USB_LOG_QUEUE_SIZE: usize = 16;
 const USB_LOG_MESSAGE_SIZE: usize = 256;
 
-static mut USB_LOG_QUEUE: [Option<heapless::String<USB_LOG_MESSAGE_SIZE>>; USB_LOG_QUEUE_SIZE] = 
+static mut USB_LOG_QUEUE: [Option<heapless::String<USB_LOG_MESSAGE_SIZE>>; USB_LOG_QUEUE_SIZE] =
     [const { None }; USB_LOG_QUEUE_SIZE];
 static mut USB_LOG_QUEUE_HEAD: usize = 0;
 static mut USB_LOG_QUEUE_TAIL: usize = 0;

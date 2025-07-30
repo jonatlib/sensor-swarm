@@ -1,18 +1,17 @@
 /// Sensor Commands Handler Module
-/// 
+///
 /// This module handles all sensor-related USB commands including reading sensor data
 /// and filtering by sensor type. It provides a clean interface between the USB command
 /// system and the sensor subsystem.
-
-use crate::sensors::traits::{EnvironmentalSensor, EnvironmentalData};
-use crate::usb_commands::parser::{UsbCommand, SensorType};
+use crate::sensors::traits::{EnvironmentalData, EnvironmentalSensor};
+use crate::usb_commands::parser::{SensorType, UsbCommand};
 use crate::usb_commands::responses::UsbResponse;
 use heapless::String;
 
 /// Sensor Commands Handler
-/// 
+///
 /// Handles processing of sensor-related commands and generates appropriate responses.
-pub struct SensorCommandHandler<S> 
+pub struct SensorCommandHandler<S>
 where
     S: EnvironmentalSensor,
 {
@@ -25,9 +24,7 @@ where
 {
     /// Create a new sensor command handler
     pub fn new() -> Self {
-        Self {
-            sensor: None,
-        }
+        Self { sensor: None }
     }
 
     /// Set the sensor instance for the command handler
@@ -38,14 +35,12 @@ where
     /// Process a sensor-related command and generate a response
     pub async fn process_sensor_command(&mut self, command: UsbCommand) -> UsbResponse {
         match command {
-            UsbCommand::ReadSensors => {
-                self.handle_read_sensors().await
-            }
-            
+            UsbCommand::ReadSensors => self.handle_read_sensors().await,
+
             UsbCommand::ReadSensorType(sensor_type) => {
                 self.handle_read_sensor_type(sensor_type).await
             }
-            
+
             _ => {
                 // This handler only processes sensor commands
                 let mut error_msg = String::new();
@@ -118,7 +113,11 @@ where
 
     /// Get sensor count (0 or 1)
     pub fn sensor_count(&self) -> u8 {
-        if self.sensor.is_some() { 1 } else { 0 }
+        if self.sensor.is_some() {
+            1
+        } else {
+            0
+        }
     }
 }
 

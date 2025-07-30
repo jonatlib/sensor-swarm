@@ -1,13 +1,12 @@
 /// USB communication implementation for STM32F401 Black Pill
 /// Provides hardware-specific USB byte-level communication and logging
 /// Uses embassy-usb with CDC-ACM for serial communication over USB
-
-use crate::hw::traits::{UsbCommunication, UsbLogger, DebugInterface};
+use crate::hw::traits::{DebugInterface, UsbCommunication, UsbLogger};
 use defmt::*;
+use embassy_stm32::bind_interrupts;
+use embassy_stm32::usb_otg::{Driver, Instance};
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
 use embassy_usb::{Builder, Config, UsbDevice};
-use embassy_stm32::usb_otg::{Driver, Instance};
-use embassy_stm32::bind_interrupts;
 use heapless::String;
 
 // Bind USB OTG FS interrupt
@@ -23,8 +22,12 @@ pub struct UsbManager {
 }
 
 // Global USB components - these need to live for the entire program duration
-static mut USB_DEVICE: Option<UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>> = None;
-static mut CDC_CLASS: Option<CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>> = None;
+static mut USB_DEVICE: Option<
+    UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+> = None;
+static mut CDC_CLASS: Option<
+    CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+> = None;
 
 impl UsbManager {
     /// Create a new USB Manager instance
@@ -56,14 +59,7 @@ impl UsbManager {
         let usb_config = embassy_stm32::usb_otg::Config::default();
 
         // Create the USB driver
-        let driver = Driver::new_fs(
-            usb, 
-            Irqs, 
-            dp, 
-            dm, 
-            unsafe { &mut EP_OUT_BUFFER }, 
-            usb_config
-        );
+        let driver = Driver::new_fs(usb, Irqs, dp, dm, unsafe { &mut EP_OUT_BUFFER }, usb_config);
 
         // Create USB device configuration
         let mut config = Config::new(0xc0de, 0xcafe);
@@ -87,7 +83,7 @@ impl UsbManager {
         // Create CDC-ACM class with runtime state initialization
         use embassy_usb::class::cdc_acm::State;
         static mut STATE: Option<State> = None;
-        
+
         // Initialize state at runtime
         let cdc_class = unsafe {
             STATE = Some(State::new());
@@ -102,7 +98,7 @@ impl UsbManager {
             USB_DEVICE = Some(usb_device);
             CDC_CLASS = Some(cdc_class);
         }
-        
+
         self.connected = true;
         self.initialized = true;
 
@@ -186,9 +182,7 @@ impl UsbLogger for UsbManager {
         // Format the message into a heapless string (limited to 256 chars)
         let mut formatted = String::<256>::new();
         match core::fmt::write(&mut formatted, args) {
-            Ok(_) => {
-                self.log(formatted.as_str()).await
-            }
+            Ok(_) => self.log(formatted.as_str()).await,
             Err(_) => {
                 error!("Failed to format log message");
                 Err("Log message formatting failed")
