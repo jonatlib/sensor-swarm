@@ -60,7 +60,7 @@ pub struct EnvironmentalData {
 
 /// Validity flags for sensor data
 #[bitfield(u8)]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Format)]
 pub struct DataValidity {
     /// Temperature reading is valid
     pub temperature_valid: bool,
@@ -102,13 +102,6 @@ impl DataValidity {
     }
 }
 
-#[cfg(feature = "defmt")]
-impl defmt::Format for DataValidity {
-    fn format(&self, fmt: defmt::Formatter) {
-        defmt::write!(fmt, "DataValidity {{ temperature_valid: {}, humidity_valid: {}, pressure_valid: {}, light_valid: {} }}", 
-                     self.temperature_valid(), self.humidity_valid(), self.pressure_valid(), self.light_valid())
-    }
-}
 
 impl EnvironmentalData {
     /// Create a new EnvironmentalData with default values

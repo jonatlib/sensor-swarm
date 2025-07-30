@@ -151,6 +151,7 @@ impl Packet {
 }
 
 #[cfg(test)]
+#[defmt_test::tests]
 mod tests {
     use super::*;
 
@@ -159,27 +160,27 @@ mod tests {
         let mut control = PacketControl::new();
 
         // Test initial state
-        assert!(!control.is_ack_request());
-        assert!(!control.is_ack());
-        assert!(!control.is_emergency());
-        assert!(!control.is_retransmit());
+        defmt::assert!(!control.is_ack_request());
+        defmt::assert!(!control.is_ack());
+        defmt::assert!(!control.is_emergency());
+        defmt::assert!(!control.is_retransmit());
 
         // Test setting flags
         control.set_ack_request(true);
-        assert!(control.is_ack_request());
+        defmt::assert!(control.is_ack_request());
 
         control.set_ack_response(true);
-        assert!(control.is_ack());
+        defmt::assert!(control.is_ack());
 
         control.set_emergency(true);
-        assert!(control.is_emergency());
+        defmt::assert!(control.is_emergency());
 
         control.set_retransmit(true);
-        assert!(control.is_retransmit());
+        defmt::assert!(control.is_retransmit());
 
         // Test unsetting flags
         control.set_ack_request(false);
-        assert!(!control.is_ack_request());
+        defmt::assert!(!control.is_ack_request());
     }
 
     #[test]
@@ -187,11 +188,11 @@ mod tests {
         let payload = b"Hello, World!";
         let packet = Packet::new(0x1234, 0x5678, 42, payload);
 
-        assert_eq!(packet.header.sender_id, 0x1234);
-        assert_eq!(packet.header.target_id, 0x5678);
-        assert_eq!(packet.header.sequence_number, 42);
-        assert_eq!(packet.header.payload_len, payload.len() as u8);
-        assert_eq!(packet.payload_data(), payload);
+        defmt::assert!(packet.header.sender_id == 0x1234);
+        defmt::assert!(packet.header.target_id == 0x5678);
+        defmt::assert!(packet.header.sequence_number == 42);
+        defmt::assert!(packet.header.payload_len == payload.len() as u8);
+        defmt::assert!(packet.payload_data() == payload);
     }
 
     #[test]
@@ -201,12 +202,12 @@ mod tests {
         let packet = Packet::new(0x1111, 0x2222, 100, &large_payload);
 
         // Should truncate to MAX_PAYLOAD_SIZE
-        assert_eq!(packet.header.payload_len, MAX_PAYLOAD_SIZE as u8);
-        assert_eq!(packet.payload_data().len(), MAX_PAYLOAD_SIZE);
+        defmt::assert!(packet.header.payload_len == MAX_PAYLOAD_SIZE as u8);
+        defmt::assert!(packet.payload_data().len() == MAX_PAYLOAD_SIZE);
 
         // Check that the truncated data matches
         for i in 0..MAX_PAYLOAD_SIZE {
-            assert_eq!(packet.payload[i], 0xAA);
+            defmt::assert!(packet.payload[i] == 0xAA);
         }
     }
 
@@ -214,8 +215,8 @@ mod tests {
     fn test_packet_creation_with_empty_payload() {
         let packet = Packet::new(0x0001, 0x0002, 1, &[]);
 
-        assert_eq!(packet.header.payload_len, 0);
-        assert_eq!(packet.payload_data().len(), 0);
+        defmt::assert!(packet.header.payload_len == 0);
+        defmt::assert!(packet.payload_data().len() == 0);
     }
 
     #[test]
@@ -230,27 +231,12 @@ mod tests {
         let deserialized_packet = Packet::from_bytes(&bytes);
 
         // Verify all fields match
-        assert_eq!(
-            deserialized_packet.header.sender_id,
-            original_packet.header.sender_id
-        );
-        assert_eq!(
-            deserialized_packet.header.target_id,
-            original_packet.header.target_id
-        );
-        assert_eq!(
-            deserialized_packet.header.sequence_number,
-            original_packet.header.sequence_number
-        );
-        assert_eq!(
-            deserialized_packet.header.payload_len,
-            original_packet.header.payload_len
-        );
-        assert_eq!(
-            deserialized_packet.payload_data(),
-            original_packet.payload_data()
-        );
-        assert_eq!(deserialized_packet, original_packet);
+        defmt::assert!(deserialized_packet.header.sender_id == original_packet.header.sender_id);
+        defmt::assert!(deserialized_packet.header.target_id == original_packet.header.target_id);
+        defmt::assert!(deserialized_packet.header.sequence_number == original_packet.header.sequence_number);
+        defmt::assert!(deserialized_packet.header.payload_len == original_packet.header.payload_len);
+        defmt::assert!(deserialized_packet.payload_data() == original_packet.payload_data());
+        defmt::assert!(deserialized_packet == original_packet);
     }
 
     #[test]
@@ -267,10 +253,10 @@ mod tests {
         let deserialized = Packet::from_bytes(&bytes);
 
         // Verify control flags are preserved
-        assert!(deserialized.header.control.is_emergency());
-        assert!(deserialized.header.control.is_ack_request());
-        assert!(!deserialized.header.control.is_ack());
-        assert!(!deserialized.header.control.is_retransmit());
+        defmt::assert!(deserialized.header.control.is_emergency());
+        defmt::assert!(deserialized.header.control.is_ack_request());
+        defmt::assert!(!deserialized.header.control.is_ack());
+        defmt::assert!(!deserialized.header.control.is_retransmit());
     }
 
     #[test]
@@ -279,11 +265,8 @@ mod tests {
         let packet = Packet::new(0, 0, 0, &[]);
         let bytes = packet.to_bytes();
 
-        assert_eq!(bytes.len(), PACKET_SIZE_BYTES);
-        assert_eq!(
-            PACKET_SIZE_BYTES,
-            core::mem::size_of::<Header>() + MAX_PAYLOAD_SIZE
-        );
+        defmt::assert!(bytes.len() == PACKET_SIZE_BYTES);
+        defmt::assert!(PACKET_SIZE_BYTES == core::mem::size_of::<Header>() + MAX_PAYLOAD_SIZE);
     }
 
     #[test]
@@ -292,15 +275,15 @@ mod tests {
         let max_payload = [0x55; MAX_PAYLOAD_SIZE];
         let packet = Packet::new(0x1234, 0x5678, 1, &max_payload);
 
-        assert_eq!(packet.header.payload_len, MAX_PAYLOAD_SIZE as u8);
-        assert_eq!(packet.payload_data(), &max_payload[..]);
+        defmt::assert!(packet.header.payload_len == MAX_PAYLOAD_SIZE as u8);
+        defmt::assert!(packet.payload_data() == &max_payload[..]);
 
         // Test with one byte less than max
         let almost_max_payload = [0x66; MAX_PAYLOAD_SIZE - 1];
         let packet2 = Packet::new(0x1234, 0x5678, 2, &almost_max_payload);
 
-        assert_eq!(packet2.header.payload_len, (MAX_PAYLOAD_SIZE - 1) as u8);
-        assert_eq!(packet2.payload_data(), &almost_max_payload[..]);
+        defmt::assert!(packet2.header.payload_len == (MAX_PAYLOAD_SIZE - 1) as u8);
+        defmt::assert!(packet2.payload_data() == &almost_max_payload[..]);
     }
 
     #[test]
@@ -310,17 +293,18 @@ mod tests {
         let packet2 = Packet::new(0x1111, 0x2222, 42, payload);
         let packet3 = Packet::new(0x1111, 0x2222, 43, payload); // Different sequence
 
-        assert_eq!(packet1, packet2);
-        assert_ne!(packet1, packet3);
+        defmt::assert!(packet1 == packet2);
+        defmt::assert!(packet1 != packet3);
     }
 
     #[test]
     fn test_header_fields() {
         let packet = Packet::new(0xDEAD, 0xBEEF, 0xCAFE, b"test");
 
-        assert_eq!(packet.header.sender_id, 0xDEAD);
-        assert_eq!(packet.header.target_id, 0xBEEF);
-        assert_eq!(packet.header.sequence_number, 0xCAFE);
-        assert_eq!(packet.header.payload_len, 4);
+        defmt::assert!(packet.header.sender_id == 0xDEAD);
+        defmt::assert!(packet.header.target_id == 0xBEEF);
+        defmt::assert!(packet.header.sequence_number == 0xCAFE);
+        defmt::assert!(packet.header.payload_len == 4);
     }
 }
+
