@@ -108,7 +108,7 @@ where
 
     /// Check if sensor is available and ready
     pub fn is_sensor_ready(&self) -> bool {
-        self.sensor.as_ref().map_or(false, |s| s.is_ready())
+        self.sensor.as_ref().is_some_and(|s| s.is_ready())
     }
 
     /// Get sensor count (0 or 1)

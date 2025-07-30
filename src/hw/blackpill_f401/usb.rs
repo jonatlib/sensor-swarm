@@ -4,8 +4,8 @@
 use crate::hw::traits::{DebugInterface, UsbCommunication, UsbLogger};
 use defmt::*;
 use embassy_stm32::bind_interrupts;
-use embassy_stm32::usb_otg::{Driver, Instance};
-use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
+use embassy_stm32::usb_otg::Driver;
+use embassy_usb::class::cdc_acm::CdcAcmClass;
 use embassy_usb::{Builder, Config, UsbDevice};
 use heapless::String;
 
@@ -169,7 +169,7 @@ impl UsbLogger for UsbManager {
     async fn log(&mut self, message: &str) -> Result<(), &'static str> {
         // Use heapless string for no_std environment
         let mut log_msg = String::<512>::new();
-        match core::fmt::write(&mut log_msg, format_args!("[USB] {}\r\n", message)) {
+        match core::fmt::write(&mut log_msg, format_args!("[USB] {message}\r\n")) {
             Ok(_) => self.send_bytes(log_msg.as_bytes()).await,
             Err(_) => {
                 error!("Failed to format USB log message");
@@ -193,11 +193,9 @@ impl UsbLogger for UsbManager {
 
 impl DebugInterface for UsbManager {
     /// Initialize the debug interface
-    fn init(&mut self) -> impl core::future::Future<Output = Result<(), &'static str>> + Send {
-        async move {
-            info!("USB debug interface initialized");
-            Ok(())
-        }
+    async fn init(&mut self) -> Result<(), &'static str> {
+        info!("USB debug interface initialized");
+        Ok(())
     }
 }
 

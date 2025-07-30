@@ -72,7 +72,7 @@ impl CommandParser {
             command_str
                 .chars()
                 .zip(cmd.chars())
-                .all(|(a, b)| a.to_ascii_lowercase() == b.to_ascii_lowercase())
+                .all(|(a, b)| a.eq_ignore_ascii_case(&b))
         };
 
         if matches_command("READ_SENSORS") || matches_command("SENSORS") {

@@ -4,7 +4,6 @@ use crate::hw::blackpill_f401::usb::UsbManager;
 /// Provides hardware-specific device setup and configuration
 use crate::hw::traits::DeviceManagement;
 use crate::usb_log;
-use defmt::*;
 use embassy_stm32::{rcc, Config};
 
 /// Device manager for STM32F401 Black Pill

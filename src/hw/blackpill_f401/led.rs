@@ -6,9 +6,7 @@ use defmt::*;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::peripherals::PC13;
 use embassy_stm32::time::Hertz;
-use embassy_stm32::timer::simple_pwm::SimplePwm;
-use embassy_stm32::timer::{Channel, CountingMode};
-use embassy_stm32::Peripheral;
+use embassy_stm32::timer::Channel;
 
 /// Built-in LED implementation for STM32F401 Black Pill with PWM support
 /// The built-in LED is connected to PC13 and is active low

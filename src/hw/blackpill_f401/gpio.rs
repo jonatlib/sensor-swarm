@@ -1,5 +1,4 @@
 use crate::usb_log;
-use defmt::*;
 /// Enhanced GPIO implementation for STM32F401 Black Pill
 /// Provides hardware-specific GPIO initialization functions that return Embassy GPIO types
 use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pin, Pull, Speed};
