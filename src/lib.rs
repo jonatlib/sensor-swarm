@@ -11,3 +11,5 @@ pub mod radio;
 pub mod sensors;
 #[cfg(feature = "embedded")]
 pub mod hw;
+#[cfg(feature = "embedded")]
+pub mod usb_commands;
