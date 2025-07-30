@@ -7,6 +7,7 @@ edition = "2021"
 default = ["blackpill-f401", "embedded"]
 blackpill-f401 = []
 hil = []
+defmt-test = ["dep:defmt-test"]
 embedded = [
     "embassy-stm32",
     "embassy-usb",
@@ -30,6 +31,4 @@ cortex-m-rt = { version = "0.7.0", optional = true }
 # Non-embedded dependencies that work in both environments
 bitfield-struct = "0.8"
 heapless = "0.8"
-
-[dev-dependencies]
-defmt-test = "0.3"
+defmt-test = { version = "0.3", optional = true }
