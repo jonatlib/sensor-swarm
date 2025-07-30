@@ -15,7 +15,7 @@
 /// - sensor_commands: Sensor-related command handlers
 /// - system_commands: System-related command handlers
 
-use crate::hw::traits::{UsbCommunication, UsbLogger};
+use crate::hw::traits::{UsbCommunication, UsbLogger, DeviceManagement};
 use crate::sensors::traits::EnvironmentalSensor;
 use defmt::*;
 use heapless::Vec;
@@ -41,12 +41,14 @@ const COMMAND_TERMINATOR: u8 = b'\n';
 /// It's designed to be hardware-agnostic and work with any implementation
 /// of the UsbCommunication trait. It coordinates between different command
 /// handlers for better modularity.
-pub struct UsbCommandHandler<U, S> 
+pub struct UsbCommandHandler<U, S, D> 
 where
     U: UsbCommunication + UsbLogger,
     S: EnvironmentalSensor,
+    D: DeviceManagement,
 {
     usb_manager: U,
+    device_manager: D,
     parser: CommandParser,
     sensor_handler: SensorCommandHandler<S>,
     system_handler: SystemCommandHandler<U>,
@@ -55,16 +57,18 @@ where
     response_buffer: Vec<u8, 512>,
 }
 
-impl<U, S> UsbCommandHandler<U, S>
+impl<U, S, D> UsbCommandHandler<U, S, D>
 where
     U: UsbCommunication + UsbLogger + Clone,
     S: EnvironmentalSensor,
+    D: DeviceManagement,
 {
     /// Create a new USB command handler
-    pub fn new(usb_manager: U) -> Self {
+    pub fn new(usb_manager: U, device_manager: D) -> Self {
         Self {
             system_handler: SystemCommandHandler::new(usb_manager.clone()),
             usb_manager,
+            device_manager,
             parser: CommandParser::new(),
             sensor_handler: SensorCommandHandler::new(),
             response_formatter: ResponseFormatter::new(),
@@ -161,6 +165,31 @@ where
                 let sensor_ready = self.sensor_handler.is_sensor_ready();
                 self.system_handler.process_system_command(command, sensor_count, sensor_ready).await
             }
+            
+            // Reboot commands - these need special handling as they don't return
+            UsbCommand::RebootCpu => {
+                // Send acknowledgment before rebooting
+                let ack_response = UsbResponse::Ack;
+                if let Err(e) = self.send_response(ack_response).await {
+                    warn!("Failed to send reboot acknowledgment: {}", e);
+                }
+                
+                // Perform the reboot - this will not return
+                info!("Executing CPU reboot command");
+                self.device_manager.reboot();
+            }
+            
+            UsbCommand::RebootCpuToDfu => {
+                // Send acknowledgment before rebooting
+                let ack_response = UsbResponse::Ack;
+                if let Err(e) = self.send_response(ack_response).await {
+                    warn!("Failed to send DFU reboot acknowledgment: {}", e);
+                }
+                
+                // Perform the DFU reboot - this will not return
+                info!("Executing CPU reboot to DFU mode command");
+                self.device_manager.reboot_to_bootloader();
+            }
         }
     }
 
@@ -182,15 +211,17 @@ where
 
 /// Convenience function to create and run a USB command handler task
 /// This can be used in the main application to easily set up USB command handling
-pub async fn run_usb_command_handler<U, S>(
+pub async fn run_usb_command_handler<U, S, D>(
     usb_manager: U,
+    device_manager: D,
     sensor: Option<S>,
 ) -> Result<(), &'static str>
 where
     U: UsbCommunication + UsbLogger + Clone,
     S: EnvironmentalSensor,
+    D: DeviceManagement,
 {
-    let mut handler = UsbCommandHandler::new(usb_manager);
+    let mut handler = UsbCommandHandler::new(usb_manager, device_manager);
     
     if let Some(sensor) = sensor {
         handler.set_sensor(sensor);

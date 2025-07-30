@@ -150,6 +150,13 @@ impl DeviceManagement for BlackPillDevice {
         Err("SPI peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
     }
 
+    /// Reboot the device normally
+    /// This performs a standard system reset
+    fn reboot(&self) -> ! {
+        usb_log!(info, "Performing normal system reboot...");
+        self.soft_reset()
+    }
+
     /// Reboot the device into DFU bootloader mode
     /// This triggers a jump to the STM32 built-in DFU bootloader
     fn reboot_to_bootloader(&self) -> ! {

@@ -23,6 +23,10 @@ pub enum UsbCommand {
     Ping,
     /// Get list of available commands
     Help,
+    /// Reboot the CPU
+    RebootCpu,
+    /// Reboot the CPU to DFU mode
+    RebootCpuToDfu,
     /// Unknown/invalid command
     Unknown(String<64>),
 }
@@ -87,6 +91,10 @@ impl CommandParser {
             UsbCommand::Ping
         } else if matches_command("HELP") || matches_command("?") {
             UsbCommand::Help
+        } else if matches_command("REBOOT") || matches_command("REBOOT_CPU") {
+            UsbCommand::RebootCpu
+        } else if matches_command("REBOOT_DFU") || matches_command("REBOOT_CPU_DFU") || matches_command("DFU") {
+            UsbCommand::RebootCpuToDfu
         } else {
             let mut unknown_cmd = String::new();
             let _ = unknown_cmd.push_str(command_str);
@@ -106,6 +114,8 @@ impl CommandParser {
         let _ = help_text.push_str("DEBUG - Get debug info\n");
         let _ = help_text.push_str("STATUS - Get device status\n");
         let _ = help_text.push_str("PING - Test connectivity\n");
+        let _ = help_text.push_str("REBOOT - Reboot CPU\n");
+        let _ = help_text.push_str("DFU - Reboot to DFU mode\n");
         let _ = help_text.push_str("HELP - Show this help");
         help_text
     }

@@ -26,6 +26,10 @@ pub trait DeviceManagement {
     /// Returns initialized LED and USB manager instances
     fn init_peripherals(&mut self, peripherals: embassy_stm32::Peripherals) -> impl core::future::Future<Output = Result<(Self::Led, Self::UsbManager), &'static str>> + Send;
     
+    /// Reboot the device normally
+    /// This performs a standard system reset
+    fn reboot(&self) -> !;
+    
     /// Reboot the device into the DFU bootloader
     /// This allows for easy firmware updates via USB DFU
     fn reboot_to_bootloader(&self) -> !;
