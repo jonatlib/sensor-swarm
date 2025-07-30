@@ -53,8 +53,8 @@ args = ["fmt", "--", "--emit=files"]
 
 
 [tasks.test]
-#command = "cargo"
-#args = ["test"]
+command = "cargo"
+args = ["test", "--lib", "--no-default-features", "--features", "std", "--target", "x86_64-unknown-linux-gnu"]
 dependencies = ["build"]
 
 

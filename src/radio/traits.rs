@@ -1,11 +1,13 @@
 // Radio communication traits
 // This module defines generic, hardware-agnostic traits for radio communication
 
+#[cfg(feature = "defmt")]
 use defmt::Format;
 use super::protocol::Packet;
 
 /// Error types for radio communication operations
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Format)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(Format))]
 pub enum RadioError {
     /// Hardware initialization failed
     InitializationFailed,
