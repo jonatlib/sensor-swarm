@@ -1,6 +1,9 @@
 /// Hardware abstraction traits for core utilities
 /// These traits provide a hardware-agnostic interface for debugging and device management
 
+/// Type alias for initialization results that return a component and remaining peripherals
+pub type InitResult<T> = Result<(T, embassy_stm32::Peripherals), &'static str>;
+
 /// Trait for abstracting debug interface setup
 /// Implementations should configure the appropriate logging backend (USB, RTT, etc.)
 pub trait DebugInterface {
@@ -27,15 +30,15 @@ pub trait DeviceManagement {
     fn init_led(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(Self::Led, embassy_stm32::Peripherals), &'static str>;
+    ) -> InitResult<Self::Led>;
 
-    /// Initialize hardware peripherals (excluding LED) from embassy_stm32::init output
-    /// This method takes the peripherals struct and extracts what it needs for USB and other components
+    /// Initialize USB peripheral from embassy_stm32::init output
+    /// This method takes the peripherals struct and extracts what it needs for USB initialization
     /// Returns initialized USB manager instance and remaining peripherals
-    fn init_peripherals(
+    fn init_usb(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> impl core::future::Future<Output = Result<(Self::UsbManager, embassy_stm32::Peripherals), &'static str>> + Send;
+    ) -> impl core::future::Future<Output = InitResult<Self::UsbManager>> + Send;
 
     /// Reboot the device normally
     /// This performs a standard system reset
@@ -46,12 +49,20 @@ pub trait DeviceManagement {
     fn reboot_to_bootloader(&self) -> !;
 
     /// Initialize a timer peripheral and return it pre-configured
-    /// This returns a configured timer that can be used directly with Embassy timer functionality
-    fn init_timer(&mut self) -> Result<Self::Timer, &'static str>;
+    /// This method takes the peripherals struct and extracts what it needs for timer initialization
+    /// Returns initialized timer instance and remaining peripherals
+    fn init_timer(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> InitResult<Self::Timer>;
 
     /// Initialize an SPI peripheral and return it pre-configured
-    /// This returns a configured SPI that can be used directly with Embassy SPI functionality
-    fn init_spi(&mut self) -> Result<Self::Spi, &'static str>;
+    /// This method takes the peripherals struct and extracts what it needs for SPI initialization
+    /// Returns initialized SPI instance and remaining peripherals
+    fn init_spi(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> InitResult<Self::Spi>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)

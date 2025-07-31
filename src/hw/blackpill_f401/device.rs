@@ -2,7 +2,7 @@ use crate::hw::blackpill_f401::led::BlackPillLed;
 use crate::hw::blackpill_f401::usb::UsbManager;
 /// Device initialization and management for STM32F401 Black Pill
 /// Provides hardware-specific device setup and configuration
-use crate::hw::traits::DeviceManagement;
+use crate::hw::traits::{DeviceManagement, InitResult};
 use crate::usb_log;
 use embassy_stm32::{rcc, Config};
 
@@ -101,7 +101,7 @@ impl DeviceManagement for BlackPillDevice {
     fn init_led(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(Self::Led, embassy_stm32::Peripherals), &'static str> {
+    ) -> InitResult<Self::Led> {
         usb_log!(info, "Initializing BlackPill LED on PC13...");
         
         // Extract PC13 for LED initialization using unsafe pointer operations
@@ -124,14 +124,14 @@ impl DeviceManagement for BlackPillDevice {
         Ok((led, remaining_peripherals))
     }
 
-    /// Initialize hardware peripherals (excluding LED) from embassy_stm32::init output
-    /// This method takes the peripherals struct and extracts what it needs for USB and other components
+    /// Initialize USB peripheral from embassy_stm32::init output
+    /// This method takes the peripherals struct and extracts what it needs for USB initialization
     /// Returns initialized USB manager instance and remaining peripherals
-    async fn init_peripherals(
+    async fn init_usb(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(Self::UsbManager, embassy_stm32::Peripherals), &'static str> {
-        usb_log!(info, "Initializing BlackPill peripherals (excluding LED)...");
+    ) -> InitResult<Self::UsbManager> {
+        usb_log!(info, "Initializing BlackPill USB...");
 
         // Extract USB peripherals using unsafe pointer operations
         let (usb_otg_fs, pa12, pa11, remaining_peripherals) = unsafe {
@@ -167,11 +167,15 @@ impl DeviceManagement for BlackPillDevice {
     }
 
     /// Initialize a timer peripheral and return it pre-configured
-    /// Returns TIM2 peripheral that can be used directly with Embassy timer functionality
-    fn init_timer(&mut self) -> Result<Self::Timer, &'static str> {
+    /// This method takes the peripherals struct and extracts what it needs for timer initialization
+    /// Returns initialized timer instance and remaining peripherals
+    fn init_timer(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> InitResult<Self::Timer> {
         usb_log!(info, "Initializing TIM2 peripheral for timer functionality");
 
-        // In a full implementation, this would take the TIM2 peripheral from embassy_stm32::init()
+        // In a full implementation, this would extract the TIM2 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
 
@@ -180,11 +184,15 @@ impl DeviceManagement for BlackPillDevice {
     }
 
     /// Initialize an SPI peripheral and return it pre-configured
-    /// Returns SPI1 peripheral that can be used directly with Embassy SPI functionality
-    fn init_spi(&mut self) -> Result<Self::Spi, &'static str> {
+    /// This method takes the peripherals struct and extracts what it needs for SPI initialization
+    /// Returns initialized SPI instance and remaining peripherals
+    fn init_spi(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> InitResult<Self::Spi> {
         usb_log!(info, "Initializing SPI1 peripheral for SPI functionality");
 
-        // In a full implementation, this would take the SPI1 peripheral from embassy_stm32::init()
+        // In a full implementation, this would extract the SPI1 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
 

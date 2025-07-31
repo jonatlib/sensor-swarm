@@ -41,8 +41,8 @@ async fn main(spawner: Spawner) {
     led.off();
     embassy_time::Timer::after_millis(200).await;
 
-    // Initialize remaining hardware peripherals using hardware abstraction
-    let (usb_manager, _remaining_peripherals) = device_manager.init_peripherals(remaining_peripherals).await.expect("Hardware initialization failed");
+    // Initialize USB using hardware abstraction
+    let (usb_manager, _remaining_peripherals) = device_manager.init_usb(remaining_peripherals).await.expect("USB initialization failed");
 
     usb_log!(info, "Hardware peripherals initialized successfully");
 
