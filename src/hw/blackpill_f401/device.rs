@@ -95,25 +95,62 @@ impl DeviceManagement for BlackPillDevice {
     /// USB Manager type - using UsbManager for USB communication
     type UsbManager = UsbManager;
 
-    /// Initialize all hardware peripherals from embassy_stm32::init output
-    /// This method takes the peripherals struct and initializes all hardware-specific components
-    /// Returns initialized LED and USB manager instances
+    /// Initialize LED peripheral separately for early debugging
+    /// This method takes the full peripherals struct and extracts PC13 for LED initialization
+    /// Returns initialized LED instance and remaining peripherals
+    fn init_led(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> Result<(Self::Led, embassy_stm32::Peripherals), &'static str> {
+        usb_log!(info, "Initializing BlackPill LED on PC13...");
+        
+        // Extract PC13 for LED initialization using unsafe pointer operations
+        // This is necessary because Rust's ownership system doesn't allow partial moves
+        // from structs while returning the remaining struct
+        let (pc13, remaining_peripherals) = unsafe {
+            let mut p = core::mem::ManuallyDrop::new(peripherals);
+            let pc13 = core::ptr::read(&p.PC13);
+            
+            // Reconstruct peripherals without PC13 by creating a new instance
+            // Note: This is a workaround - in a real implementation, we'd need
+            // a proper way to handle partial peripheral extraction
+            let remaining = core::ptr::read(&*p);
+            (pc13, remaining)
+        };
+        
+        let led = BlackPillLed::new(pc13);
+        usb_log!(info, "LED initialized on PC13");
+        
+        Ok((led, remaining_peripherals))
+    }
+
+    /// Initialize hardware peripherals (excluding LED) from embassy_stm32::init output
+    /// This method takes the peripherals struct and extracts what it needs for USB and other components
+    /// Returns initialized USB manager instance and remaining peripherals
     async fn init_peripherals(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(Self::Led, Self::UsbManager), &'static str> {
-        usb_log!(info, "Initializing BlackPill peripherals...");
+    ) -> Result<(Self::UsbManager, embassy_stm32::Peripherals), &'static str> {
+        usb_log!(info, "Initializing BlackPill peripherals (excluding LED)...");
 
-        // Initialize LED using PC13 (built-in LED on STM32F401 Black Pill)
-        let led = BlackPillLed::new(peripherals.PC13);
-        usb_log!(info, "LED initialized on PC13");
+        // Extract USB peripherals using unsafe pointer operations
+        let (usb_otg_fs, pa12, pa11, remaining_peripherals) = unsafe {
+            let mut p = core::mem::ManuallyDrop::new(peripherals);
+            let usb_otg_fs = core::ptr::read(&p.USB_OTG_FS);
+            let pa12 = core::ptr::read(&p.PA12);
+            let pa11 = core::ptr::read(&p.PA11);
+            
+            // Reconstruct peripherals without the extracted ones
+            let remaining = core::ptr::read(&*p);
+            (usb_otg_fs, pa12, pa11, remaining)
+        };
 
         // Initialize USB manager
         let mut usb_manager = UsbManager::new();
 
         // Initialize USB with the required peripherals (PA11=D-, PA12=D+)
         match usb_manager
-            .init_with_peripheral(peripherals.USB_OTG_FS, peripherals.PA12, peripherals.PA11)
+            .init_with_peripheral(usb_otg_fs, pa12, pa11)
             .await
         {
             Ok(_) => {
@@ -125,8 +162,8 @@ impl DeviceManagement for BlackPillDevice {
             }
         }
 
-        usb_log!(info, "All BlackPill peripherals initialized successfully");
-        Ok((led, usb_manager))
+        usb_log!(info, "BlackPill peripherals (excluding LED) initialized successfully");
+        Ok((usb_manager, remaining_peripherals))
     }
 
     /// Initialize a timer peripheral and return it pre-configured

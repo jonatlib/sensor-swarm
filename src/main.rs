@@ -16,7 +16,7 @@ use embassy_executor::Spawner;
 use sensor_swarm::app::SensorApp;
 use sensor_swarm::hw::blackpill_f401::usb::UsbManager;
 use sensor_swarm::hw::blackpill_f401::usb_defmt_logger::process_usb_log_queue;
-use sensor_swarm::hw::traits::DeviceManagement;
+use sensor_swarm::hw::traits::{DeviceManagement, Led};
 use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb_log;
 
@@ -24,31 +24,39 @@ use sensor_swarm::usb_log;
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     info!("Starting sensor swarm application");
-    let mut embassy_config: embassy_stm32::Config = Default::default();
-    // embassy_config.rcc.hsi = false;
-    let p = embassy_stm32::init(embassy_config);
-
+    
     // Initialize device manager
     let mut device_manager = BlackPillDevice::new();
+    
+    // Get the device-specific configuration for embassy initialization
+    let embassy_config = device_manager.init().expect("Device initialization failed");
+    let p = embassy_stm32::init(embassy_config);
 
-    // Initialize all hardware peripherals using hardware abstraction
-    let (led, usb_manager) = match device_manager.init_peripherals(p).await {
-        Ok((led, usb_manager)) => {
-            usb_log!(info, "Hardware peripherals initialized successfully");
+    // Initialize LED first for early debugging (hardware-agnostic)
+    let (mut led, remaining_peripherals) = device_manager.init_led(p).expect("LED initialization failed");
 
-            // Initialize USB logging bridge to forward defmt logs to USB
-            // Note: In a real implementation, we'd need to handle the static lifetime properly
-            // For now, we'll demonstrate the concept
-            usb_log!(info, "USB logging bridge is now active!");
-            usb_log!(info, "All logs will be sent to both RTT and USB serial");
+    // Blink LED once to indicate LED initialization complete
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
 
-            (led, usb_manager)
-        }
-        Err(e) => {
-            info!("Failed to initialize hardware peripherals: {}", e);
-            panic!("Hardware initialization failed");
-        }
-    };
+    // Initialize remaining hardware peripherals using hardware abstraction
+    let (usb_manager, _remaining_peripherals) = device_manager.init_peripherals(remaining_peripherals).await.expect("Hardware initialization failed");
+
+    usb_log!(info, "Hardware peripherals initialized successfully");
+
+    // Initialize USB logging bridge to forward defmt logs to USB
+    // Note: In a real implementation, we'd need to handle the static lifetime properly
+    // For now, we'll demonstrate the concept
+    usb_log!(info, "USB logging bridge is now active!");
+    usb_log!(info, "All logs will be sent to both RTT and USB serial");
+
+    // Blink LED again to indicate all initialization complete
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
 
     // Spawn USB device task to handle USB communication and log forwarding
     spawner.spawn(usb_device_task(usb_manager)).unwrap();

@@ -21,13 +21,21 @@ pub trait DeviceManagement {
     /// USB Manager type that will be returned by init_peripherals
     type UsbManager: crate::hw::traits::UsbCommunication + crate::hw::traits::UsbLogger;
 
-    /// Initialize all hardware peripherals from embassy_stm32::init output
-    /// This method takes the peripherals struct and initializes all hardware-specific components
-    /// Returns initialized LED and USB manager instances
+    /// Initialize LED peripheral separately for early debugging
+    /// This method takes the full peripherals struct and extracts what it needs for LED initialization
+    /// Returns initialized LED instance and remaining peripherals
+    fn init_led(
+        &mut self,
+        peripherals: embassy_stm32::Peripherals,
+    ) -> Result<(Self::Led, embassy_stm32::Peripherals), &'static str>;
+
+    /// Initialize hardware peripherals (excluding LED) from embassy_stm32::init output
+    /// This method takes the peripherals struct and extracts what it needs for USB and other components
+    /// Returns initialized USB manager instance and remaining peripherals
     fn init_peripherals(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> impl core::future::Future<Output = Result<(Self::Led, Self::UsbManager), &'static str>> + Send;
+    ) -> impl core::future::Future<Output = Result<(Self::UsbManager, embassy_stm32::Peripherals), &'static str>> + Send;
 
     /// Reboot the device normally
     /// This performs a standard system reset
