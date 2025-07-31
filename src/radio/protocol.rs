@@ -133,7 +133,7 @@ impl Packet {
     }
 }
 
-#[cfg(feature = "defmt-test")]
+#[cfg(test)]
 #[defmt_test::tests]
 mod tests {
     //! Unit tests for radio protocol data structures and logic.

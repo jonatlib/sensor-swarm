@@ -15,6 +15,7 @@ fn panic() -> ! {
 
 // Import the library modules we want to test
 
+#[cfg(test)]
 #[defmt_test::tests]
 mod tests {
     use super::*;
