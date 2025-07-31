@@ -64,6 +64,7 @@ script = [
 
     # Step 2: Execute the compiled binary with our QEMU script directly.
     'echo "Executing test in QEMU..."',
+    'echo "You can run screen /dev/pts/41 for logging"',
     './qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
 ]
 dependencies = ["build"]

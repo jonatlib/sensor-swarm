@@ -8,8 +8,12 @@ qemu-system-arm \
   -kernel "$1" \
   -nographic \
   -gdb tcp::3333 \
-  -S \
-  -chardev stdio,id=char0 \
-  -semihosting-config chardev=char0 \
-  -serial stdio \
-  -monitor /dev/null
+  -chardev pty,id=char_semi \
+  -semihosting-config chardev=char_semi,target=native \
+  -chardev pty,id=char_serial \
+  -serial chardev:char_serial \
+  -monitor stdio
+
+
+# This flag starts halted cpu until gdb is connected
+#  -S \
