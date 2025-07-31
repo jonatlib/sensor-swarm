@@ -64,19 +64,32 @@ script = [
 
     # Step 2: Execute the compiled binary with our QEMU script directly.
     'echo "Executing test in QEMU..."',
-    'echo "You can run screen /dev/pts/41 for logging"',
-    './qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
+#    'echo "You can run screen /dev/pts/XXX for logging"',
+#    'echo "Or better run NUM=XXX cargo make test-logs"',
+    'exec ./qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm | defmt-print -e target/thumbv7em-none-eabihf/debug/sensor-swarm'
 ]
 dependencies = ["build"]
 
 
 [tasks.test-logs]
-description = "Connects probe-rs to QEMU to stream defmt logs."
-category = "Tests"
-script = [
-    'echo "Connecting probe-rs to stream RTT logs..."',
-    "probe-rs attach gdb:localhost:3333 --chip STM32F411VETx --elf target/thumbv7em-none-eabihf/debug/sensor-swarm"
-]
+description = "Streams defmt logs from a QEMU PTY. Usage: cargo make logs NUM=<pty_number>"
+script_runner = "@shell"
+script = '''
+#!/usr/bin/env sh
+# Exit the script if any command fails
+set -e
+
+# This is standard shell syntax. It tells the shell to:
+# "Use the value of the NUM environment variable if it is set, otherwise default to 1".
+# cargo-make passes the `NUM=41` you provide on the command line to the shell's environment.
+PTS_TO_USE=${NUM:-1}
+
+echo "INFO: Listening for defmt logs on /dev/pts/${PTS_TO_USE}"
+
+# The shell will now correctly use the PTS_TO_USE variable.
+# The ELF path is still hardcoded as in your file.
+cat "/dev/pts/${PTS_TO_USE}" | defmt-print -e target/thumbv7em-none-eabihf/debug/sensor-swarm
+'''
 
 
 [tasks.test-gdb]
@@ -85,6 +98,15 @@ category = "Tests"
 script = [
     'echo "Connecting GDB. Type continue to start the program and see logs."',
     "gdb-multiarch -q target/thumbv7em-none-eabihf/debug/sensor-swarm --ex 'target remote :3333'"
+]
+
+
+[tasks.test-hil-logs]
+description = "Connects probe-rs to QEMU to stream defmt logs."
+category = "Tests"
+script = [
+    'echo "Connecting probe-rs to stream RTT logs..."',
+    "probe-rs attach --chip STM32F411VETx --elf target/thumbv7em-none-eabihf/debug/sensor-swarm"
 ]
 
 

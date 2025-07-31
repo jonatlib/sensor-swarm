@@ -8,7 +8,6 @@ use defmt_semihosting as _;
 use panic_probe as _;
 
 use embassy_executor::Spawner;
-
 // Import hardware abstraction and application logic
 use sensor_swarm::app::SensorApp;
 use sensor_swarm::hw::blackpill_f401::usb::UsbManager;
@@ -20,7 +19,9 @@ use sensor_swarm::usb_log;
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     info!("Starting sensor swarm application");
-    let p = embassy_stm32::init(Default::default());
+    let mut embassy_config: embassy_stm32::Config = Default::default();
+    embassy_config.rcc.hsi = false;
+    let p = embassy_stm32::init(embassy_config);
 
     // Initialize device manager
     let mut device_manager = BlackPillDevice::new();
