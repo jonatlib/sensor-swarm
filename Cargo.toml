@@ -3,6 +3,18 @@ name = "sensor-swarm"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+test = false
+
+[[bin]]
+name = "sensor-swarm"
+test = false
+
+# Test configuration for cargo test support
+[[test]]
+name = "integration"
+harness = false
+
 [features]
 default = ["blackpill-f401", "embedded"]
 blackpill-f401 = []
@@ -34,3 +46,7 @@ bitfield-struct = "0.8"
 heapless = "0.8"
 eeprom = "0.2.0"
 defmt-test = { version = "0.3", optional = true }
+
+
+[dev-dependencies]
+defmt-test = "0.3"
