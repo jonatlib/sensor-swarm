@@ -9,5 +9,7 @@ qemu-system-arm \
   -nographic \
   -gdb tcp::3333 \
   -S \
+  -chardev stdio,id=char0 \
+  -semihosting-config chardev=char0 \
   -serial stdio \
   -monitor /dev/null

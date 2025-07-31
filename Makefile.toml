@@ -74,7 +74,7 @@ description = "Connects probe-rs to QEMU to stream defmt logs."
 category = "Tests"
 script = [
     'echo "Connecting probe-rs to stream RTT logs..."',
-    "probe-rs attach --chip STM32F411VETx --gdb-port 3333 --elf target/thumbv7em-none-eabihf/debug/sensor-swarm"
+    "probe-rs attach gdb:localhost:3333 --chip STM32F411VETx --elf target/thumbv7em-none-eabihf/debug/sensor-swarm"
 ]
 
 

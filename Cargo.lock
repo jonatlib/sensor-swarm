@@ -215,6 +215,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defmt-semihosting"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b0302c696f9080df24a40eed6d34e34de9a610723b8176df52272798971250"
+dependencies = [
+ "cortex-m",
+ "critical-section",
+ "defmt 1.0.1",
+ "semihosting",
+]
+
+[[package]]
 name = "defmt-test"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -802,6 +814,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f93c025f9cfe4c388c328ece47d11a54a823da3b5ad0370b22d95ad47137f85a"
 
 [[package]]
+name = "semihosting"
+version = "0.1.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e1c7d2b77d80283c750a39c52f1ab4d17234e8f30bca43550f5b2375f41d5f"
+
+[[package]]
 name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -831,6 +849,7 @@ dependencies = [
  "cortex-m-rt",
  "defmt 0.3.100",
  "defmt-rtt",
+ "defmt-semihosting",
  "defmt-test",
  "eeprom",
  "embassy-executor",
