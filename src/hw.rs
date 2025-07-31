@@ -16,20 +16,17 @@ pub use traits::*;
 pub use blackpill_f401::{
     // Device management
     BlackPillDevice,
-    BlackPillFlashManager,
     // Flash/EEPROM
-    BlackPillFlashStorage,
+    EepromStorage,
+    get_eeprom_range,
     // GPIO
     BlackPillGpioInit,
     BlackPillGpioManager,
-    BlackPillKeyValueStore,
     // LED with PWM support
     BlackPillLed,
     BlackPillLedManager,
     BlackPillPwmLed,
     DeviceInfo,
-    FlashInfo,
-    FlashStorageInfo,
     GpioPinInfo,
     LedInfo,
     // USB Communication

@@ -247,6 +247,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "eeprom"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbba9d959db714846776c680b38599beac3fd3309cca3ac9429ce4814653fe0b"
+
+[[package]]
 name = "embassy-embedded-hal"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -826,6 +832,7 @@ dependencies = [
  "defmt 0.3.100",
  "defmt-rtt",
  "defmt-test",
+ "eeprom",
  "embassy-executor",
  "embassy-stm32",
  "embassy-time",
