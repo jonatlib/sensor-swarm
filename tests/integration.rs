@@ -1,9 +1,11 @@
 #![no_std]
 #![no_main]
 
+use defmt::info;
 use defmt_semihosting as _;
 // Replaced by semihosing, for testing, if logging works, remove this.
 // use defmt_rtt as _; // global logger
+use panic_probe as _;
 
 // Custom defmt panic handler for tests
 #[defmt::panic_handler]
