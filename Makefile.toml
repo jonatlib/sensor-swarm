@@ -53,9 +53,38 @@ args = ["fmt", "--", "--emit=files"]
 
 
 [tasks.test]
-command = "cargo"
-args = ["run", "--features", "defmt-test", "--config", "target.thumbv7em-none-eabihf.runner=[\"sh\", \"qemu-runner.sh\"]"]
+description = "Builds and runs unit tests in QEMU, bypassing the default GDB runner."
+category = "Tests"
+# The `script` runner executes shell commands line-by-line.
+script = [
+    # Step 1: Build the specific unit test binary.
+    # The output binary will be located at the path used in the next step.
+    'echo "Building test binary..."',
+    'cargo build --features defmt-test',
+
+    # Step 2: Execute the compiled binary with our QEMU script directly.
+    'echo "Executing test in QEMU..."',
+    './qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
+]
 dependencies = ["build"]
+
+
+[tasks.test-logs]
+description = "Connects probe-rs to QEMU to stream defmt logs."
+category = "Tests"
+script = [
+    'echo "Connecting probe-rs to stream RTT logs..."',
+    "probe-rs attach --chip STM32F411VETx --gdb-port 3333 --elf target/thumbv7em-none-eabihf/debug/sensor-swarm"
+]
+
+
+[tasks.test-gdb]
+description = "Connects GDB to start the program."
+category = "Tests"
+script = [
+    'echo "Connecting GDB. Type continue to start the program and see logs."',
+    "arm-none-eabi-gdb -q target/thumbv7em-none-eabihf/debug/sensor-swarm --ex 'target remote :3333'"
+]
 
 
 [tasks.test-hil]

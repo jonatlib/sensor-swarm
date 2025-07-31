@@ -7,5 +7,7 @@ qemu-system-arm \
   -cpu cortex-m4 \
   -kernel "$1" \
   -nographic \
+  -gdb tcp::3333 \
+  -S \
   -serial stdio \
   -monitor /dev/null
