@@ -54,7 +54,7 @@ args = ["fmt", "--", "--emit=files"]
 
 [tasks.test]
 command = "cargo"
-args = ["test", "--features", "defmt-test", "--config", "'target.thumbv7em-none-eabihf.runner=[\"sh\", \"qemu-runner.sh\"]'"]
+args = ["test", "--features", "defmt-test", "--config", "target.thumbv7em-none-eabihf.runner=[\"sh\", \"qemu-runner.sh\"]"]
 dependencies = ["build"]
 
 

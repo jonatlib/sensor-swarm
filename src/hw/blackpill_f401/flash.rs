@@ -2,9 +2,9 @@
 /// Provides persistent storage using dedicated flash sector for STM32F411CE
 use crate::hw::traits::FlashStorage;
 use crate::usb_log;
+use core::ops::Range;
 use defmt::*;
 use embassy_stm32::flash::{Blocking, Flash};
-use core::ops::Range;
 
 /// Hardware-agnostic EEPROM storage implementation
 /// Uses the eeprom crate with linker-defined memory regions for persistent storage
@@ -19,12 +19,15 @@ impl EepromStorage {
     pub fn new(flash: Flash<'static, Blocking>) -> Self {
         let eeprom_range = get_eeprom_range();
         let sector_size = eeprom_range.end - eeprom_range.start;
-        
+
         usb_log!(info, "Initializing EEPROM storage...");
-        usb_log!(info, "EEPROM range: 0x{:08X} - 0x{:08X} ({} KB)", 
-                 eeprom_range.start, 
-                 eeprom_range.end, 
-                 sector_size / 1024);
+        usb_log!(
+            info,
+            "EEPROM range: 0x{:08X} - 0x{:08X} ({} KB)",
+            eeprom_range.start,
+            eeprom_range.end,
+            sector_size / 1024
+        );
 
         Self {
             flash,
@@ -56,14 +59,17 @@ impl EepromStorage {
                 *byte = core::ptr::read_volatile((magic_addr + i as u32) as *const u8);
             }
         }
-        
+
         let stored_magic = u32::from_le_bytes(magic_buffer);
-        
+
         if stored_magic != EEPROM_MAGIC {
             usb_log!(info, "Initializing EEPROM for first use...");
-            
+
             // Erase the EEPROM sector
-            match self.flash.blocking_erase(self.eeprom_range.start, self.eeprom_range.end) {
+            match self
+                .flash
+                .blocking_erase(self.eeprom_range.start, self.eeprom_range.end)
+            {
                 Ok(_) => {
                     usb_log!(info, "EEPROM sector erased successfully");
                 }
@@ -72,10 +78,13 @@ impl EepromStorage {
                     return Err("EEPROM sector erase failed");
                 }
             }
-            
+
             // Write the magic number
             let magic_bytes = EEPROM_MAGIC.to_le_bytes();
-            match self.flash.blocking_write(self.eeprom_range.start + MAGIC_OFFSET, &magic_bytes) {
+            match self
+                .flash
+                .blocking_write(self.eeprom_range.start + MAGIC_OFFSET, &magic_bytes)
+            {
                 Ok(_) => {
                     usb_log!(info, "EEPROM magic written successfully");
                 }
@@ -85,7 +94,11 @@ impl EepromStorage {
                 }
             }
         } else {
-            usb_log!(info, "EEPROM already initialized with magic: 0x{:08X}", stored_magic);
+            usb_log!(
+                info,
+                "EEPROM already initialized with magic: 0x{:08X}",
+                stored_magic
+            );
         }
 
         Ok(())
@@ -94,13 +107,19 @@ impl EepromStorage {
 
 impl FlashStorage for EepromStorage {
     fn read(&self, address: u32, buffer: &mut [u8]) -> Result<(), &'static str> {
-        if !self.is_valid_address(address) || !self.is_valid_address(address + buffer.len() as u32 - 1) {
+        if !self.is_valid_address(address)
+            || !self.is_valid_address(address + buffer.len() as u32 - 1)
+        {
             return Err("Address out of range");
         }
 
         let abs_address = self.to_absolute_address(address);
 
-        debug!("EEPROM read: address=0x{:08X}, length={}", abs_address, buffer.len());
+        debug!(
+            "EEPROM read: address=0x{:08X}, length={}",
+            abs_address,
+            buffer.len()
+        );
 
         // Read directly from Flash memory
         unsafe {
@@ -114,13 +133,19 @@ impl FlashStorage for EepromStorage {
     }
 
     fn write(&mut self, address: u32, data: &[u8]) -> Result<(), &'static str> {
-        if !self.is_valid_address(address) || !self.is_valid_address(address + data.len() as u32 - 1) {
+        if !self.is_valid_address(address)
+            || !self.is_valid_address(address + data.len() as u32 - 1)
+        {
             return Err("Address out of range");
         }
 
         let abs_address = self.to_absolute_address(address);
 
-        debug!("EEPROM write: address=0x{:08X}, length={}", abs_address, data.len());
+        debug!(
+            "EEPROM write: address=0x{:08X}, length={}",
+            abs_address,
+            data.len()
+        );
 
         match self.flash.blocking_write(abs_address, data) {
             Ok(_) => {
@@ -139,9 +164,16 @@ impl FlashStorage for EepromStorage {
             return Err("Address out of range");
         }
 
-        usb_log!(info, "Erasing EEPROM sector containing address 0x{:08X}", address);
+        usb_log!(
+            info,
+            "Erasing EEPROM sector containing address 0x{:08X}",
+            address
+        );
 
-        match self.flash.blocking_erase(self.eeprom_range.start, self.eeprom_range.end) {
+        match self
+            .flash
+            .blocking_erase(self.eeprom_range.start, self.eeprom_range.end)
+        {
             Ok(_) => {
                 usb_log!(info, "EEPROM sector erased successfully");
                 Ok(())

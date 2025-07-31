@@ -102,7 +102,6 @@ impl DataValidity {
     }
 }
 
-
 impl EnvironmentalData {
     /// Create a new EnvironmentalData with default values
     pub fn new() -> Self {

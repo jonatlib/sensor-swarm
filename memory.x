@@ -6,34 +6,33 @@ Linker script for the STM32F411CEU6 (512K Flash, 128K RAM)
 MEMORY
 {
   /*
-    The STM32F411 flash is organized into sectors that must be erased entirely.
-    To prevent data corruption, we reserve the last 128KB sector (Sector 7)
-    exclusively for the virtual EEPROM.
+    The main program memory region. It MUST be named `FLASH` so that
+    the default linker scripts can find it. Its size is reduced
+    to make space for our virtual EEPROM.
   */
-  FLASH_PROG     : ORIGIN = 0x08000000, LENGTH = 384K
+  FLASH          : ORIGIN = 0x08000000, LENGTH = 384K
+
+  /*
+    This region is reserved for the virtual EEPROM. No sections are placed
+    here by default, so it remains available for the application to use.
+  */
   EEPROM_VIRTUAL : ORIGIN = 0x08060000, LENGTH = 128K
+
+  /* Main RAM for stack and variables. */
   RAM            : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
-/* Base address of the stack */
-_stack_start = ORIGIN(RAM) + LENGTH(RAM);
-
-/* Define symbols for the EEPROM region for Rust code to access */
+/*
+  Define symbols for the Rust code to access the EEPROM region.
+  These symbols provide the start and end addresses.
+*/
 _eeprom_start = ORIGIN(EEPROM_VIRTUAL);
 _eeprom_end = ORIGIN(EEPROM_VIRTUAL) + LENGTH(EEPROM_VIRTUAL);
 
-/* Instruct the linker to place sections correctly */
-SECTIONS
-{
-  .text :
-  {
-    *(.vectors*)
-    *(.text*)
-    *(.rodata*)
-    . = ALIGN(4);
-  } > FLASH_PROG
-
-  .data : { . = ALIGN(4); _sdata = .; *(.data*); . = ALIGN(4); _edata = .; } > RAM AT > FLASH_PROG
-  .bss :  { . = ALIGN(4); _sbss = .; *(.bss*); *(COMMON); . = ALIGN(4); _ebss = .; } > RAM
-}
-
+/*
+  DO NOT define a `SECTIONS` block here.
+  The `cortex-m-rt` or `embassy-executor` crates provide a default
+  linker script that handles the placement of .vector_table, .text,
+  .data, and other sections into the `FLASH` and `RAM` regions
+  defined above. Redefining `SECTIONS` here will cause overlap errors.
+*/

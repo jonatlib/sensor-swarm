@@ -65,7 +65,6 @@ impl PacketControl {
     }
 }
 
-
 /// Complete radio packet structure
 #[derive(Debug, Clone, PartialEq, Eq, Format)]
 pub struct Packet {
@@ -138,11 +137,11 @@ impl Packet {
 #[defmt_test::tests]
 mod tests {
     //! Unit tests for radio protocol data structures and logic.
-    //! 
+    //!
     //! These tests are hardware-agnostic and test pure logic, data structures,
     //! serialization, and protocol behavior. They can run on QEMU or any target
     //! without requiring real hardware peripherals.
-    //! 
+    //!
     //! For tests that require real hardware (GPIO, SPI, timers, etc.), use the
     //! "hil" (Hardware-in-the-Loop) feature gate:
     //! ```rust
@@ -152,7 +151,7 @@ mod tests {
     //!     // Test code that requires real hardware
     //! }
     //! ```
-    
+
     use super::*;
 
     #[test]
@@ -233,8 +232,12 @@ mod tests {
         // Verify all fields match
         defmt::assert!(deserialized_packet.header.sender_id == original_packet.header.sender_id);
         defmt::assert!(deserialized_packet.header.target_id == original_packet.header.target_id);
-        defmt::assert!(deserialized_packet.header.sequence_number == original_packet.header.sequence_number);
-        defmt::assert!(deserialized_packet.header.payload_len == original_packet.header.payload_len);
+        defmt::assert!(
+            deserialized_packet.header.sequence_number == original_packet.header.sequence_number
+        );
+        defmt::assert!(
+            deserialized_packet.header.payload_len == original_packet.header.payload_len
+        );
         defmt::assert!(deserialized_packet.payload_data() == original_packet.payload_data());
         defmt::assert!(deserialized_packet == original_packet);
     }
@@ -307,4 +310,3 @@ mod tests {
         defmt::assert!(packet.header.payload_len == 4);
     }
 }
-

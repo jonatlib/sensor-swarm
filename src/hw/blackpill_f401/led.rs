@@ -217,73 +217,73 @@ pub struct LedInfo {
 #[defmt_test::tests]
 mod hil_tests {
     //! Hardware-in-the-Loop (HIL) tests for LED functionality.
-    //! 
+    //!
     //! These tests require real hardware and must be run on the target device.
     //! They test actual GPIO pin states, timing behavior, and hardware interactions
     //! that cannot be simulated in QEMU or other emulators.
-    //! 
+    //!
     //! To run these tests:
     //! ```bash
     //! cargo test --features hil --target thumbv7em-none-eabihf
     //! ```
-    
+
     use super::*;
     use embassy_time::{Duration, Timer};
-    
+
     #[test]
     async fn test_led_hardware_toggle() {
         // This test requires real hardware - it tests actual GPIO pin behavior
         // Initialize hardware peripherals (this would need real embassy_stm32::init)
         // let p = embassy_stm32::init(Default::default());
         // let mut led = BlackPillLed::new(p.PC13);
-        
+
         // For now, create a mock to demonstrate the pattern
         // In a real HIL test, you would:
         // 1. Initialize real hardware
         // 2. Control GPIO pins
         // 3. Measure actual pin states or use external test equipment
         // 4. Test timing-sensitive operations
-        
+
         // Example of what a real HIL test would look like:
         // led.on();
         // Timer::after(Duration::from_millis(100)).await;
         // // Here you might check with external equipment that LED is actually on
-        // 
+        //
         // led.off();
         // Timer::after(Duration::from_millis(100)).await;
         // // Here you might check that LED is actually off
-        
+
         // For demonstration, just test timing behavior
         let start = embassy_time::Instant::now();
         Timer::after(Duration::from_millis(10)).await;
         let elapsed = start.elapsed();
-        
+
         // Verify timing is approximately correct (allowing for some variance)
         defmt::assert!(elapsed >= Duration::from_millis(9));
         defmt::assert!(elapsed <= Duration::from_millis(15));
-        
+
         defmt::info!("HIL LED test completed - timing verified");
     }
-    
+
     #[test]
     async fn test_led_manager_hardware_init() {
         // This test would verify that LED manager can actually initialize
         // hardware resources and that GPIO pins are properly configured
-        
+
         let mut manager = BlackPillLedManager::new();
         defmt::assert!(!manager.is_initialized());
-        
+
         // In a real HIL test, this would actually configure GPIO pins
         let result = manager.init();
         defmt::assert!(result.is_ok());
         defmt::assert!(manager.is_initialized());
-        
+
         // Test that we can get hardware information
         let info = manager.get_led_info();
         defmt::assert!(info.builtin_led_pin == "PC13");
         defmt::assert!(info.builtin_led_active_low);
         defmt::assert!(info.max_pwm_frequency > 0);
-        
+
         defmt::info!("HIL LED manager test completed");
     }
 }

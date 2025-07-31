@@ -14,11 +14,9 @@ pub use traits::*;
 
 #[cfg(feature = "blackpill-f401")]
 pub use blackpill_f401::{
+    get_eeprom_range,
     // Device management
     BlackPillDevice,
-    // Flash/EEPROM
-    EepromStorage,
-    get_eeprom_range,
     // GPIO
     BlackPillGpioInit,
     BlackPillGpioManager,
@@ -27,6 +25,8 @@ pub use blackpill_f401::{
     BlackPillLedManager,
     BlackPillPwmLed,
     DeviceInfo,
+    // Flash/EEPROM
+    EepromStorage,
     GpioPinInfo,
     LedInfo,
     // USB Communication
