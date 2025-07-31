@@ -2,10 +2,14 @@
 #![no_main]
 
 use defmt::info;
-use defmt_semihosting as _;
-// Replaced by semihosing, for testing, if logging works, remove this.
-// use defmt_rtt as _; // global logger
+
 use panic_probe as _;
+
+// Logging
+#[cfg(test)]
+use defmt_semihosting as _;
+#[cfg(not(test))]
+use defmt_rtt as _;
 
 use embassy_executor::Spawner;
 // Import hardware abstraction and application logic
@@ -21,7 +25,7 @@ use sensor_swarm::usb_log;
 async fn main(spawner: Spawner) {
     info!("Starting sensor swarm application");
     let mut embassy_config: embassy_stm32::Config = Default::default();
-    embassy_config.rcc.hsi = false;
+    // embassy_config.rcc.hsi = false;
     let p = embassy_stm32::init(embassy_config);
 
     // Initialize device manager

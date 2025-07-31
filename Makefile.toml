@@ -56,18 +56,20 @@ args = ["fmt", "--", "--emit=files"]
 description = "Builds and runs unit tests in QEMU, bypassing the default GDB runner."
 category = "Tests"
 # The `script` runner executes shell commands line-by-line.
-script = [
-    # Step 1: Build the specific unit test binary.
-    # The output binary will be located at the path used in the next step.
-    'echo "Building test binary..."',
-    'cargo build --features defmt-test',
-
-    # Step 2: Execute the compiled binary with our QEMU script directly.
-    'echo "Executing test in QEMU..."',
-#    'echo "You can run screen /dev/pts/XXX for logging"',
-#    'echo "Or better run NUM=XXX cargo make test-logs"',
-    'exec ./qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
-]
+command = "cargo"
+args = ["test"]
+#script = [
+#    # Step 1: Build the specific unit test binary.
+#    # The output binary will be located at the path used in the next step.
+#    'echo "Building test binary..."',
+#    'cargo build --features defmt-test',
+#
+#    # Step 2: Execute the compiled binary with our QEMU script directly.
+#    'echo "Executing test in QEMU..."',
+##    'echo "You can run screen /dev/pts/XXX for logging"',
+##    'echo "Or better run NUM=XXX cargo make test-logs"',
+#    'exec ./qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
+#]
 dependencies = ["build"]
 
 
@@ -150,7 +152,7 @@ dependencies = ["st-probe"]
 
 # dfu-util --device 0483:df11 -D /home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin --alt 0 -s 0x08000000
 command = "dfu-util"
-args = ["--device", "0483:df11", "-D", "/home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin", "--alt", "0", "-s", "0x08000000"]
+args = ["--device", "0483:df11", "-D", "target/thumbv7em-none-eabihf/debug/sensor-swarm.bin", "--alt", "0", "-s", "0x08000000"]
 dependencies = ["st-probe", "build-binary", "size", "size-small"]
 
 

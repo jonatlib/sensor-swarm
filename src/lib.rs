@@ -24,9 +24,9 @@ mod tests {
 }
 
 #[cfg(test)]
-use panic_probe as _;
-#[cfg(test)]
 use defmt_semihosting as _;
+#[cfg(test)]
+use panic_probe as _;
 
 #[cfg(test)]
 #[defmt::panic_handler]
