@@ -1,13 +1,13 @@
 [target.thumbv7em-none-eabihf]
 #runner = ["gdb-multiarch", "-q"]
-runner = "/home/libor/RustroverProjects/sensor-swarm/qemu-runner.sh"
+runner = "./qemu-runner.sh"
 rustflags = [
   "-C", "link-arg=-Tlink.x"
 ]
 
 
 [target.'cfg(all(target_arch = "arm", target_os = "none", test))']
-runner = "/home/libor/RustroverProjects/sensor-swarm/qemu-runner.sh"
+runner = "./qemu-runner.sh"
 
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
