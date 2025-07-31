@@ -1,4 +1,4 @@
 fn main() {
-    println!("cargo:rustc-link-arg-bins=--nmagic");
-    println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
+    println!("cargo:rustc-link-arg=--nmagic");
+    println!("cargo:rustc-link-arg=-Tdefmt.x");
 }
