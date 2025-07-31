@@ -214,7 +214,6 @@ pub struct LedInfo {
 }
 
 #[cfg(all(test, feature = "hil"))]
-#[defmt_test::tests]
 mod hil_tests {
     //! Hardware-in-the-Loop (HIL) tests for LED functionality.
     //!
@@ -228,6 +227,7 @@ mod hil_tests {
     //! ```
 
     use super::*;
+    use defmt_test::*;
     use embassy_time::{Duration, Timer};
 
     #[test]

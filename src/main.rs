@@ -16,6 +16,7 @@ use sensor_swarm::hw::traits::DeviceManagement;
 use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb_log;
 
+#[cfg(not(test))]
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     info!("Starting sensor swarm application");
