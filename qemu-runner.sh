@@ -7,6 +7,7 @@ qemu-system-arm \
   -cpu cortex-m4 \
   -kernel "$1" \
   -nographic \
+  -S \
   -gdb tcp::3333 \
   -chardev pty,id=char_semi \
   -semihosting-config chardev=char_semi,target=native \

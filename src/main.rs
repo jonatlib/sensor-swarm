@@ -19,6 +19,7 @@ use sensor_swarm::usb_log;
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    info!("Starting sensor swarm application");
     let p = embassy_stm32::init(Default::default());
 
     // Initialize device manager
