@@ -25,99 +25,84 @@ use sensor_swarm::usb_log;
 #[cfg(not(test))]
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
-    // Initialize the STM32 peripherals.
-    // `Default::default()` provides a standard configuration.
-    let p = embassy_stm32::init(Default::default());
+    info!("Starting sensor swarm application");
 
-    // On most Blackpill boards, the user LED is connected to pin PC13.
-    // We configure it as a push-pull output pin.
-    let mut led = Output::new(p.PC13, Level::High, Speed::Low);
+    // Initialize device manager
+    let mut device_manager = BlackPillDevice::new();
 
-    // Loop forever, blinking the LED.
-    loop {
-        // Note: The LED on the Blackpill is often "active-low", meaning
-        // setting the pin LOW turns the LED ON, and setting it HIGH turns it OFF.
+    // Get the device-specific configuration for embassy initialization
+    let embassy_config = device_manager.init().expect("Device initialization failed");
+    let p = embassy_stm32::init(embassy_config);
 
-        // Turn the LED ON by setting the pin to a low state.
-        led.set_low();
-        defmt::info!("LED ON"); // Log the state
+    // Initialize LED first for early debugging (hardware-agnostic)
+    let (mut led, remaining_peripherals) = device_manager
+        .init_led(p)
+        .expect("LED initialization failed");
 
-        // Wait for 500 milliseconds.
-        Timer::after(Duration::from_millis(500)).await;
+    // Blink LED once to indicate LED initialization complete
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
+    led.on();
+    embassy_time::Timer::after_millis(1000).await;
+    led.off();
+    embassy_time::Timer::after_millis(1000).await;
 
-        // Turn the LED OFF by setting the pin to a high state.
-        led.set_high();
-        defmt::info!("LED OFF"); // Log the state
+    // Initialize USB using hardware abstraction
+    let (usb_manager, _remaining_peripherals) = device_manager
+        .init_usb(remaining_peripherals)
+        .await
+        .expect("USB initialization failed");
 
-        // Wait for another 500 milliseconds.
-        Timer::after(Duration::from_millis(500)).await;
-    }
+    info!("Hardware peripherals initialized successfully");
 
-    // info!("Starting sensor swarm application");
-    //
-    // // Initialize device manager
-    // let mut device_manager = BlackPillDevice::new();
-    //
-    // // Get the device-specific configuration for embassy initialization
-    // let embassy_config = device_manager.init().expect("Device initialization failed");
-    // let p = embassy_stm32::init(embassy_config);
-    //
-    // // Initialize LED first for early debugging (hardware-agnostic)
-    // let (mut led, remaining_peripherals) = device_manager
-    //     .init_led(p)
-    //     .expect("LED initialization failed");
-    //
-    // // Blink LED once to indicate LED initialization complete
-    // led.on();
-    // embassy_time::Timer::after_millis(200).await;
-    // led.off();
-    // embassy_time::Timer::after_millis(200).await;
-    //
-    // // Initialize USB using hardware abstraction
-    // let (usb_manager, _remaining_peripherals) = device_manager
-    //     .init_usb(remaining_peripherals)
-    //     .await
-    //     .expect("USB initialization failed");
-    //
-    // usb_log!(info, "Hardware peripherals initialized successfully");
-    //
-    // // Initialize USB logging bridge to forward defmt logs to USB
-    // // Note: In a real implementation, we'd need to handle the static lifetime properly
-    // // For now, we'll demonstrate the concept
-    // usb_log!(info, "USB logging bridge is now active!");
-    // usb_log!(info, "All logs will be sent to both RTT and USB serial");
-    //
-    // // Blink LED again to indicate all initialization complete
-    // led.on();
-    // embassy_time::Timer::after_millis(200).await;
-    // led.off();
-    // embassy_time::Timer::after_millis(200).await;
-    //
-    // // Spawn USB device task to handle USB communication and log forwarding
-    // spawner.spawn(usb_device_task(usb_manager)).unwrap();
-    //
-    // // Create the hardware-agnostic sensor application
-    // let mut app = SensorApp::new(led, device_manager);
-    //
-    // // Run the main application logic (hardware-agnostic)
-    // app.run().await;
+    // Initialize USB logging bridge to forward defmt logs to USB
+    // Note: In a real implementation, we'd need to handle the static lifetime properly
+    // For now, we'll demonstrate the concept
+    info!("USB logging bridge is now active!");
+    info!("All logs will be sent to both RTT and USB serial");
+
+    // Blink LED again to indicate all initialization complete
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
+    embassy_time::Timer::after_millis(1000).await;
+
+    // Spawn USB device task to handle USB communication and log forwarding
+    spawner.spawn(usb_device_task(usb_manager)).unwrap();
+
+    // Create the hardware-agnostic sensor application
+    let mut app = SensorApp::new(led, device_manager);
+
+    // Run the main application logic (hardware-agnostic)
+    app.run().await;
 }
-//
-// #[embassy_executor::task]
-// async fn usb_device_task(mut usb_manager: UsbManager) {
-//     info!("Starting USB device task with log forwarding");
-//     loop {
-//         // Process any queued USB log messages
-//         process_usb_log_queue(&mut usb_manager).await;
-//
-//         // Run the USB device state machine
-//         if let Err(e) = usb_manager.run_usb_task().await {
-//             info!("USB device task error: {}", e);
-//             // Wait a bit before retrying
-//             embassy_time::Timer::after_millis(100).await;
-//         }
-//
-//         // Small delay to prevent busy waiting
-//         embassy_time::Timer::after_millis(10).await;
-//     }
-// }
+
+#[embassy_executor::task]
+async fn usb_device_task(mut usb_manager: UsbManager) {
+    info!("Starting USB device task with log forwarding");
+    loop {
+        // Process any queued USB log messages
+        process_usb_log_queue(&mut usb_manager).await;
+
+        // Run the USB device state machine
+        if let Err(e) = usb_manager.run_usb_task().await {
+            info!("USB device task error: {}", e);
+            // Wait a bit before retrying
+            embassy_time::Timer::after_millis(100).await;
+        }
+
+        // Small delay to prevent busy waiting
+        embassy_time::Timer::after_millis(10).await;
+    }
+}
