@@ -12,7 +12,7 @@ use defmt_rtt as _;
 use defmt_semihosting as _;
 
 use embassy_executor::Spawner;
-use embassy_futures::join::join;
+use embassy_futures::join::{join, join3};
 // Import hardware abstraction and application logic
 use sensor_swarm::app::SensorApp;
 use sensor_swarm::hw::blackpill_f401::usb_defmt_logger::process_usb_log_queue;
@@ -70,8 +70,14 @@ async fn main(spawner: Spawner) -> ! {
     embassy_time::Timer::after_millis(200).await;
     embassy_time::Timer::after_millis(1000).await;
 
-    // Spawn USB tasks using the wrapper
-    spawner.spawn(usb_device_task(usb_wrapper)).unwrap();
+    // Split USB wrapper to use trait-based architecture with spawned tasks
+    let (usb_device, cdc_wrapper) = usb_wrapper.split_with_traits();
+
+    // Spawn USB device task
+    spawner.spawn(usb_device_task(usb_device)).unwrap();
+
+    // Spawn USB commands task that handles CDC communication and logging
+    spawner.spawn(usb_commands_task(cdc_wrapper)).unwrap();
 
     // Create the hardware-agnostic sensor application
     let mut app = SensorApp::new(led, device_manager);
@@ -81,17 +87,33 @@ async fn main(spawner: Spawner) -> ! {
 }
 
 #[embassy_executor::task]
-async fn usb_device_task(mut usb_wrapper: sensor_swarm::hw::blackpill_f401::usb::UsbWrapper) {
-    info!("Starting USB device and CDC task");
-    
+async fn usb_device_task(
+    mut usb_device: embassy_usb::UsbDevice<
+        'static,
+        embassy_stm32::usb_otg::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>,
+    >,
+) {
+    info!("Starting USB device task - running continuously for proper enumeration");
+
+    // Run the USB device state machine continuously
+    // This is critical for USB enumeration - it must not be interrupted with delays
+    usb_device.run().await;
+}
+
+#[embassy_executor::task]
+async fn usb_commands_task(mut cdc_wrapper: sensor_swarm::hw::blackpill_f401::usb::CdcWrapper) {
+    info!("Starting USB commands task for CDC communication and logging");
+
     loop {
-        // Process any queued USB log messages
-        process_usb_log_queue(&mut usb_wrapper).await;
-        
-        // Handle CDC communication (this includes waiting for connection)
-        let _ = usb_wrapper.handle_cdc_communication().await;
-        
-        // Small delay before reconnecting
+        // Wait for USB connection
+        cdc_wrapper.wait_connection().await;
+        info!("USB CDC connected - starting command and logging handling");
+
+        // Handle communication (includes logging queue processing and command handling)
+        let _ = cdc_wrapper.handle_communication().await;
+
+        info!("USB CDC disconnected - waiting for reconnection");
+        // Small delay before trying to reconnect
         embassy_time::Timer::after_millis(100).await;
     }
 }

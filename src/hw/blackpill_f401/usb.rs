@@ -29,6 +29,107 @@ pub struct UsbWrapper {
     connected: bool,
 }
 
+/// CDC wrapper that implements USB traits for command handling and logging
+/// This struct wraps the CDC class and provides trait-based interface
+pub struct CdcWrapper {
+    cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    connected: bool,
+}
+
+impl CdcWrapper {
+    /// Create a new CDC wrapper with the given CDC class
+    pub fn new(
+        cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    ) -> Self {
+        Self {
+            cdc_class,
+            connected: false,
+        }
+    }
+
+    /// Wait for USB connection
+    pub async fn wait_connection(&mut self) {
+        self.cdc_class.wait_connection().await;
+        self.connected = true;
+        // Don't log connection to avoid potential recursion - use defmt directly for RTT only
+        defmt::info!("USB CDC connected!");
+    }
+
+    /// Handle USB communication with command processing and logging
+    pub async fn handle_communication(&mut self) -> Result<(), &'static str> {
+        let mut buf = [0; 64];
+        loop {
+            // Process any queued USB log messages first (limit to avoid blocking)
+            let mut log_count = 0;
+            while let Some(message) =
+                crate::hw::blackpill_f401::usb_defmt_logger::dequeue_usb_log_message()
+            {
+                // Send the log message over USB using heapless string
+                use heapless::String;
+                let mut log_with_prefix = String::<512>::new();
+                if core::fmt::write(
+                    &mut log_with_prefix,
+                    format_args!("[LOG] {}\r\n", message.as_str()),
+                )
+                .is_ok()
+                {
+                    if let Err(_) = self
+                        .cdc_class
+                        .write_packet(log_with_prefix.as_bytes())
+                        .await
+                    {
+                        // If USB logging fails, break to handle disconnection
+                        self.connected = false;
+                        return Err("USB disconnected during logging");
+                    }
+                }
+
+                // Limit log processing to avoid starving other tasks
+                log_count += 1;
+                if log_count >= 5 {
+                    break;
+                }
+            }
+
+            // Handle command/data reception with longer timeout to yield to other tasks
+            match embassy_futures::select::select(
+                self.cdc_class.read_packet(&mut buf),
+                embassy_time::Timer::after_millis(100), // Increased from 10ms to 100ms
+            )
+            .await
+            {
+                embassy_futures::select::Either::First(result) => {
+                    match result {
+                        Ok(n) if n > 0 => {
+                            let data = &buf[..n];
+                            // Don't log received data to avoid recursion - use defmt directly for RTT only
+                            defmt::debug!("Received USB data: {:x}", data);
+                            // Echo back the received data (can be extended for command processing)
+                            if let Err(_) = self.cdc_class.write_packet(data).await {
+                                self.connected = false;
+                                return Err("USB disconnected during echo");
+                            }
+                        }
+                        Ok(_) => {
+                            // No data received, continue
+                        }
+                        Err(_) => {
+                            // Don't log disconnection to avoid potential recursion - use defmt directly for RTT only
+                            defmt::info!("USB CDC disconnected");
+                            self.connected = false;
+                            return Err("USB disconnected");
+                        }
+                    }
+                }
+                embassy_futures::select::Either::Second(_) => {
+                    // Timeout - yield to other tasks by adding a small delay
+                    embassy_time::Timer::after_millis(10).await;
+                }
+            }
+        }
+    }
+}
+
 impl UsbWrapper {
     /// Create a new USB wrapper with the given components
     pub fn new(
@@ -52,14 +153,16 @@ impl UsbWrapper {
         // Wait for connection
         self.cdc_class.wait_connection().await;
         self.connected = true;
-        info!("USB CDC connected!");
+        // Don't log connection to avoid potential recursion - use defmt directly for RTT only
+        defmt::info!("USB CDC connected!");
 
         // Handle communication until disconnected
         let mut buf = [0; 64];
         loop {
             match self.cdc_class.read_packet(&mut buf).await {
                 Ok(len) if len > 0 => {
-                    info!("Received {} bytes over USB: {:?}", len, &buf[..len]);
+                    // Don't log received data to avoid recursion - use defmt directly for RTT only
+                    defmt::debug!("Received {} bytes over USB: {:?}", len, &buf[..len]);
                     // Echo back the received data
                     let _ = self.cdc_class.write_packet(&buf[..len]).await;
                 }
@@ -67,7 +170,8 @@ impl UsbWrapper {
                     // No data received, continue
                 }
                 Err(_) => {
-                    info!("USB CDC disconnected");
+                    // Don't log disconnection to avoid potential recursion - use defmt directly for RTT only
+                    defmt::info!("USB CDC disconnected");
                     self.connected = false;
                     break;
                 }
@@ -105,6 +209,28 @@ impl UsbWrapper {
     /// Check if USB is connected
     pub fn is_connected(&self) -> bool {
         self.connected
+    }
+
+    /// Split the wrapper into separate USB device and CDC class components
+    /// This allows using the Embassy join() pattern for proper USB enumeration
+    pub fn split(
+        self,
+    ) -> (
+        UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+        CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    ) {
+        (self.usb_device, self.cdc_class)
+    }
+
+    /// Split the wrapper into USB device and CDC wrapper that implements USB traits
+    /// This allows using the trait-based architecture with spawned tasks
+    pub fn split_with_traits(
+        self,
+    ) -> (
+        UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+        CdcWrapper,
+    ) {
+        (self.usb_device, CdcWrapper::new(self.cdc_class))
     }
 }
 
@@ -192,14 +318,44 @@ impl UsbManager {
     }
 }
 
-// Minimal trait implementations for compatibility - actual communication handled by tasks
-impl UsbCommunication for UsbManager {
-    async fn send_bytes(&mut self, _data: &[u8]) -> Result<(), &'static str> {
-        Err("USB communication should be handled by tasks that own the CDC class")
+// USB trait implementations for CdcWrapper
+impl UsbCommunication for CdcWrapper {
+    async fn send_bytes(&mut self, data: &[u8]) -> Result<(), &'static str> {
+        if self.connected {
+            match self.cdc_class.write_packet(data).await {
+                Ok(_) => {
+                    info!("Sent {} bytes over USB", data.len());
+                    Ok(())
+                }
+                Err(_) => {
+                    warn!("Failed to send {} bytes over USB", data.len());
+                    self.connected = false;
+                    Err("USB send failed")
+                }
+            }
+        } else {
+            warn!("USB not connected - cannot send {} bytes", data.len());
+            Err("USB not connected")
+        }
     }
 
-    async fn receive_bytes(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
-        Err("USB communication should be handled by tasks that own the CDC class")
+    async fn receive_bytes(&mut self, buffer: &mut [u8]) -> Result<usize, &'static str> {
+        if self.connected {
+            match self.cdc_class.read_packet(buffer).await {
+                Ok(len) => {
+                    info!("Received {} bytes over USB", len);
+                    Ok(len)
+                }
+                Err(_) => {
+                    warn!("Failed to receive bytes over USB");
+                    self.connected = false;
+                    Err("USB receive failed")
+                }
+            }
+        } else {
+            warn!("USB not connected - cannot receive bytes");
+            Err("USB not connected")
+        }
     }
 
     fn is_connected(&self) -> bool {
@@ -207,13 +363,33 @@ impl UsbCommunication for UsbManager {
     }
 }
 
-impl UsbLogger for UsbManager {
-    async fn log(&mut self, _message: &str) -> Result<(), &'static str> {
-        Err("USB logging should be handled by tasks that own the CDC class")
+impl UsbLogger for CdcWrapper {
+    async fn log(&mut self, message: &str) -> Result<(), &'static str> {
+        if self.connected {
+            // Use heapless string for no_std environment
+            let mut log_msg = String::<512>::new();
+            match core::fmt::write(&mut log_msg, format_args!("[USB] {}\r\n", message)) {
+                Ok(_) => self.send_bytes(log_msg.as_bytes()).await,
+                Err(_) => {
+                    error!("Failed to format USB log message");
+                    Err("USB log formatting failed")
+                }
+            }
+        } else {
+            Ok(()) // Silently ignore if not connected
+        }
     }
 
-    async fn log_fmt(&mut self, _args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
-        Err("USB logging should be handled by tasks that own the CDC class")
+    async fn log_fmt(&mut self, args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
+        // Format the message into a heapless string (limited to 256 chars)
+        let mut formatted = String::<256>::new();
+        match core::fmt::write(&mut formatted, args) {
+            Ok(_) => self.log(formatted.as_str()).await,
+            Err(_) => {
+                error!("Failed to format log message");
+                Err("Log message formatting failed")
+            }
+        }
     }
 }
 
