@@ -853,6 +853,7 @@ dependencies = [
  "defmt-test",
  "eeprom",
  "embassy-executor",
+ "embassy-futures",
  "embassy-stm32",
  "embassy-time",
  "embassy-usb",

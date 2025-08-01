@@ -20,34 +20,37 @@ impl BlackPillDevice {
 
     /// Initialize the device with proper clock configuration
     /// This sets up the system clocks, HSE oscillator, and PLL
+    /// Based on working Embassy USB example configuration
     pub fn init(&mut self) -> Result<Config, &'static str> {
         let mut config = Config::default();
+        {
+            use embassy_stm32::rcc::*;
+            // Configure HSE (High Speed External) oscillator - 25MHz crystal on Black Pill
+            config.rcc.hse = Some(Hse {
+                freq: embassy_stm32::time::Hertz(25_000_000),
+                mode: HseMode::Oscillator,
+            });
 
-        // Configure HSE (High Speed External) oscillator - 25MHz crystal
-        config.rcc.hse = Some(rcc::Hse {
-            freq: embassy_stm32::time::Hertz(25_000_000),
-            mode: rcc::HseMode::Oscillator,
-        });
+            // Use HSE as PLL source
+            config.rcc.pll_src = PllSource::HSE;
 
-        // Use HSE as PLL source
-        config.rcc.pll_src = rcc::PllSource::HSE;
+            // Configure PLL for Black Pill with 25MHz HSE
+            config.rcc.pll = Some(Pll {
+                prediv: PllPreDiv::DIV25,  // 25MHz / 25 = 1MHz
+                mul: PllMul::MUL336,       // 1MHz * 336 = 336MHz
+                divp: Some(PllPDiv::DIV4), // 336MHz / 4 = 84MHz (System clock)
+                divq: Some(PllQDiv::DIV7), // 336MHz / 7 = 48MHz (USB clock)
+                divr: None,
+            });
 
-        // Configure PLL for optimal performance
-        config.rcc.pll = Some(rcc::Pll {
-            prediv: rcc::PllPreDiv::DIV25,  // 25MHz / 25 = 1MHz
-            mul: rcc::PllMul::MUL336,       // 1MHz * 336 = 336MHz
-            divp: Some(rcc::PllPDiv::DIV4), // 336MHz / 4 = 84MHz (System clock)
-            divq: Some(rcc::PllQDiv::DIV7), // 336MHz / 7 = 48MHz (USB clock)
-            divr: None,
-        });
+            // Configure bus prescalers for 84MHz system clock
+            config.rcc.ahb_pre = AHBPrescaler::DIV1; // AHB = 84MHz
+            config.rcc.apb1_pre = APBPrescaler::DIV2; // APB1 = 42MHz (max 42MHz)
+            config.rcc.apb2_pre = APBPrescaler::DIV1; // APB2 = 84MHz (max 84MHz)
 
-        // Configure bus prescalers
-        config.rcc.ahb_pre = rcc::AHBPrescaler::DIV1; // AHB = 84MHz
-        config.rcc.apb1_pre = rcc::APBPrescaler::DIV2; // APB1 = 42MHz
-        config.rcc.apb2_pre = rcc::APBPrescaler::DIV1; // APB2 = 84MHz
-
-        // Use PLL as system clock
-        config.rcc.sys = rcc::Sysclk::PLL1_P;
+            // Use PLL as system clock
+            config.rcc.sys = Sysclk::PLL1_P;
+        }
 
         self.initialized = true;
 
@@ -64,9 +67,9 @@ impl BlackPillDevice {
         DeviceInfo {
             model: "STM32F401CCU6",
             board: "Black Pill",
-            flash_size: 256 * 1024, // 256KB
-            ram_size: 64 * 1024,    // 64KB
-            system_clock_hz: 84_000_000,
+            flash_size: 256 * 1024,      // 256KB
+            ram_size: 64 * 1024,         // 64KB
+            system_clock_hz: 84_000_000, // Updated to match Black Pill 25MHz HSE configuration
             usb_clock_hz: 48_000_000,
         }
     }
@@ -142,18 +145,14 @@ impl DeviceManagement for BlackPillDevice {
         {
             Ok(_) => {
                 usb_log!(info, "USB manager initialized successfully");
+                usb_log!(info, "BlackPill USB peripherals initialized successfully");
+                Ok((usb_manager, remaining_peripherals))
             }
             Err(e) => {
                 usb_log!(warn, "Failed to initialize USB manager: {}", e);
-                return Err("Failed to initialize USB manager");
+                Err("Failed to initialize USB manager")
             }
         }
-
-        usb_log!(
-            info,
-            "BlackPill peripherals (excluding LED) initialized successfully"
-        );
-        Ok((usb_manager, remaining_peripherals))
     }
 
     /// Initialize a timer peripheral and return it pre-configured

@@ -21,13 +21,8 @@ pub struct UsbManager {
     initialized: bool,
 }
 
-// Global USB components - these need to live for the entire program duration
-static mut USB_DEVICE: Option<
-    UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
-> = None;
-static mut CDC_CLASS: Option<
-    CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
-> = None;
+// USB components are now returned directly from init_with_peripheral
+// No global statics needed - Embassy tasks will own the components
 
 impl UsbManager {
     /// Create a new USB Manager instance
@@ -39,12 +34,19 @@ impl UsbManager {
     }
 
     /// Initialize USB peripheral with real USB functionality
+    /// Returns the USB device and CDC class for separate task execution
     pub async fn init_with_peripheral(
         &mut self,
         usb: embassy_stm32::peripherals::USB_OTG_FS,
         dp: embassy_stm32::peripherals::PA12,
         dm: embassy_stm32::peripherals::PA11,
-    ) -> Result<(), &'static str> {
+    ) -> Result<
+        (
+            UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+            CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+        ),
+        &'static str,
+    > {
         info!("Initializing USB CDC-ACM serial interface...");
 
         // Required buffers for USB driver and device
@@ -57,18 +59,24 @@ impl UsbManager {
 
         // Create USB OTG config with proper settings for STM32F401
         let mut usb_config = embassy_stm32::usb_otg::Config::default();
-        usb_config.vbus_detection = true;  // Enable VBUS detection for proper enumeration
+        // Do not enable vbus_detection. This is a safe default that works in all boards.
+        usb_config.vbus_detection = false;
 
         // Create the USB driver
         let driver = Driver::new_fs(usb, Irqs, dp, dm, unsafe { &mut EP_OUT_BUFFER }, usb_config);
 
-        // Create USB device configuration
+        // Create USB device configuration - using working example VID/PID
         let mut config = Config::new(0xc0de, 0xcafe);
-        config.manufacturer = Some("Sensor Swarm");
-        config.product = Some("STM32F401 Black Pill");
+        config.manufacturer = Some("Embassy");
+        config.product = Some("USB-serial example");
         config.serial_number = Some("12345678");
         config.max_power = 100;
         config.max_packet_size_0 = 64;
+
+        // Set device class to CDC (Communications Device Class) for proper serial port recognition
+        config.device_class = 0x02; // CDC class
+        config.device_sub_class = 0x00;
+        config.device_protocol = 0x00;
 
         // Create USB device builder
         let mut builder = Builder::new(
@@ -94,73 +102,23 @@ impl UsbManager {
         // Build the USB device
         let usb_device = builder.build();
 
-        // Store the USB components in global statics
-        unsafe {
-            USB_DEVICE = Some(usb_device);
-            CDC_CLASS = Some(cdc_class);
-        }
-
         self.connected = false; // Will be set to true when USB is actually enumerated
         self.initialized = true;
 
         info!("USB CDC-ACM serial interface initialized successfully");
-        info!("USB device ready for enumeration - call run_usb_task() continuously");
-        Ok(())
-    }
-
-    /// Run the USB device task (must be called continuously)
-    pub async fn run_usb_task(&mut self) -> Result<(), &'static str> {
-        unsafe {
-            if let Some(ref mut usb_device) = USB_DEVICE {
-                // Run USB device for a short time to allow cooperative multitasking
-                usb_device.run().await;
-                Ok(())
-            } else {
-                Err("USB device not initialized")
-            }
-        }
+        info!("USB device and CDC class ready for separate task execution");
+        Ok((usb_device, cdc_class))
     }
 }
 
+// Minimal trait implementations for compatibility - actual communication handled by tasks
 impl UsbCommunication for UsbManager {
-    async fn send_bytes(&mut self, data: &[u8]) -> Result<(), &'static str> {
-        unsafe {
-            if let Some(ref mut cdc) = CDC_CLASS {
-                match cdc.write_packet(data).await {
-                    Ok(_) => {
-                        info!("Sent {} bytes over USB", data.len());
-                        Ok(())
-                    }
-                    Err(_) => {
-                        warn!("Failed to send {} bytes over USB", data.len());
-                        Err("USB send failed")
-                    }
-                }
-            } else {
-                warn!("USB not initialized - cannot send {} bytes", data.len());
-                Err("USB not initialized")
-            }
-        }
+    async fn send_bytes(&mut self, _data: &[u8]) -> Result<(), &'static str> {
+        Err("USB communication should be handled by tasks that own the CDC class")
     }
 
-    async fn receive_bytes(&mut self, buffer: &mut [u8]) -> Result<usize, &'static str> {
-        unsafe {
-            if let Some(ref mut cdc) = CDC_CLASS {
-                match cdc.read_packet(buffer).await {
-                    Ok(len) => {
-                        info!("Received {} bytes over USB", len);
-                        Ok(len)
-                    }
-                    Err(_) => {
-                        warn!("Failed to receive bytes over USB");
-                        Err("USB receive failed")
-                    }
-                }
-            } else {
-                warn!("USB not initialized - cannot receive bytes");
-                Err("USB not initialized")
-            }
-        }
+    async fn receive_bytes(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
+        Err("USB communication should be handled by tasks that own the CDC class")
     }
 
     fn is_connected(&self) -> bool {
@@ -169,28 +127,12 @@ impl UsbCommunication for UsbManager {
 }
 
 impl UsbLogger for UsbManager {
-    async fn log(&mut self, message: &str) -> Result<(), &'static str> {
-        // Use heapless string for no_std environment
-        let mut log_msg = String::<512>::new();
-        match core::fmt::write(&mut log_msg, format_args!("[USB] {message}\r\n")) {
-            Ok(_) => self.send_bytes(log_msg.as_bytes()).await,
-            Err(_) => {
-                error!("Failed to format USB log message");
-                Err("USB log formatting failed")
-            }
-        }
+    async fn log(&mut self, _message: &str) -> Result<(), &'static str> {
+        Err("USB logging should be handled by tasks that own the CDC class")
     }
 
-    async fn log_fmt(&mut self, args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
-        // Format the message into a heapless string (limited to 256 chars)
-        let mut formatted = String::<256>::new();
-        match core::fmt::write(&mut formatted, args) {
-            Ok(_) => self.log(formatted.as_str()).await,
-            Err(_) => {
-                error!("Failed to format log message");
-                Err("Log message formatting failed")
-            }
-        }
+    async fn log_fmt(&mut self, _args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
+        Err("USB logging should be handled by tasks that own the CDC class")
     }
 }
 
