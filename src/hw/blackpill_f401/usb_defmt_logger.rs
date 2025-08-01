@@ -1,18 +1,17 @@
-use crate::hw::blackpill_f401::usb::UsbManager;
+use crate::hw::blackpill_f401::usb::UsbWrapper;
 /// USB logging bridge that forwards logs to USB while keeping defmt-rtt as primary
 /// This module provides a logging bridge that can send logs to both RTT (via defmt) and USB
-use crate::hw::traits::UsbLogger;
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, Ordering};
 use defmt::*;
 
 /// Global USB logger instance pointer
-static USB_LOGGER: AtomicPtr<UsbManager> = AtomicPtr::new(ptr::null_mut());
+static USB_LOGGER: AtomicPtr<UsbWrapper> = AtomicPtr::new(ptr::null_mut());
 
-/// Initialize the USB logging bridge with a UsbManager instance
+/// Initialize the USB logging bridge with a UsbWrapper instance
 /// This must be called after USB initialization to enable USB logging
-pub fn init_usb_logging_bridge(usb_manager: &'static mut UsbManager) {
-    USB_LOGGER.store(usb_manager as *mut UsbManager, Ordering::Relaxed);
+pub fn init_usb_logging_bridge(usb_wrapper: &'static mut UsbWrapper) {
+    USB_LOGGER.store(usb_wrapper as *mut UsbWrapper, Ordering::Relaxed);
     info!("USB logging bridge initialized");
 }
 
@@ -102,10 +101,10 @@ pub fn dequeue_usb_log_message() -> Option<heapless::String<USB_LOG_MESSAGE_SIZE
 
 /// Process queued USB log messages
 /// This should be called from the USB device task
-pub async fn process_usb_log_queue(usb_manager: &mut UsbManager) {
+pub async fn process_usb_log_queue(usb_wrapper: &mut UsbWrapper) {
     while let Some(message) = dequeue_usb_log_message() {
         // Send the log message over USB
-        if let Err(_) = usb_manager.log(message.as_str()).await {
+        if let Err(_) = usb_wrapper.send_log(message.as_str()).await {
             // If USB logging fails, the message is already in RTT
             break;
         }

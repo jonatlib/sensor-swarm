@@ -88,8 +88,8 @@ impl DeviceManagement for BlackPillDevice {
     type Spi = embassy_stm32::peripherals::SPI1;
     /// LED type - using BlackPillLed for PC13
     type Led = BlackPillLed;
-    /// USB Manager type - using UsbManager for USB communication
-    type UsbManager = UsbManager;
+    /// USB Wrapper type - using UsbWrapper for USB communication
+    type UsbWrapper = crate::hw::blackpill_f401::usb::UsbWrapper;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
@@ -116,11 +116,11 @@ impl DeviceManagement for BlackPillDevice {
 
     /// Initialize USB peripheral from embassy_stm32::init output
     /// This method takes the peripherals struct and extracts what it needs for USB initialization
-    /// Returns initialized USB manager instance and remaining peripherals
+    /// Returns initialized USB wrapper instance and remaining peripherals
     async fn init_usb(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::UsbManager> {
+    ) -> InitResult<crate::hw::blackpill_f401::usb::UsbWrapper> {
         usb_log!(info, "Initializing BlackPill USB...");
 
         // Extract USB peripherals using unsafe pointer operations
@@ -143,14 +143,14 @@ impl DeviceManagement for BlackPillDevice {
             .init_with_peripheral(usb_otg_fs, pa12, pa11)
             .await
         {
-            Ok(_) => {
-                usb_log!(info, "USB manager initialized successfully");
+            Ok(usb_wrapper) => {
+                usb_log!(info, "USB wrapper initialized successfully");
                 usb_log!(info, "BlackPill USB peripherals initialized successfully");
-                Ok((usb_manager, remaining_peripherals))
+                Ok((usb_wrapper, remaining_peripherals))
             }
             Err(e) => {
-                usb_log!(warn, "Failed to initialize USB manager: {}", e);
-                Err("Failed to initialize USB manager")
+                usb_log!(warn, "Failed to initialize USB wrapper: {}", e);
+                Err("Failed to initialize USB wrapper")
             }
         }
     }

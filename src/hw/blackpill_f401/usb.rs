@@ -21,6 +21,93 @@ pub struct UsbManager {
     initialized: bool,
 }
 
+/// USB wrapper that owns the USB device and CDC class components
+/// This struct encapsulates the low-level USB components and provides high-level interface
+pub struct UsbWrapper {
+    usb_device: UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    connected: bool,
+}
+
+impl UsbWrapper {
+    /// Create a new USB wrapper with the given components
+    pub fn new(
+        usb_device: UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+        cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    ) -> Self {
+        Self {
+            usb_device,
+            cdc_class,
+            connected: false,
+        }
+    }
+
+    /// Run the USB device task (should be called continuously)
+    pub async fn run_usb_device(&mut self) {
+        self.usb_device.run().await;
+    }
+
+    /// Handle CDC communication (echo and logging)
+    pub async fn handle_cdc_communication(&mut self) -> Result<(), &'static str> {
+        // Wait for connection
+        self.cdc_class.wait_connection().await;
+        self.connected = true;
+        info!("USB CDC connected!");
+
+        // Handle communication until disconnected
+        let mut buf = [0; 64];
+        loop {
+            match self.cdc_class.read_packet(&mut buf).await {
+                Ok(len) if len > 0 => {
+                    info!("Received {} bytes over USB: {:?}", len, &buf[..len]);
+                    // Echo back the received data
+                    let _ = self.cdc_class.write_packet(&buf[..len]).await;
+                }
+                Ok(_) => {
+                    // No data received, continue
+                }
+                Err(_) => {
+                    info!("USB CDC disconnected");
+                    self.connected = false;
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Send data over USB CDC
+    pub async fn send_data(&mut self, data: &[u8]) -> Result<(), &'static str> {
+        if self.connected {
+            match self.cdc_class.write_packet(data).await {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Failed to send data over USB"),
+            }
+        } else {
+            Err("USB not connected")
+        }
+    }
+
+    /// Send log message over USB
+    pub async fn send_log(&mut self, message: &str) -> Result<(), &'static str> {
+        if self.connected {
+            // Use heapless string for no_std environment
+            let mut log_msg = String::<512>::new();
+            match core::fmt::write(&mut log_msg, format_args!("[LOG] {}\r\n", message)) {
+                Ok(_) => self.send_data(log_msg.as_bytes()).await,
+                Err(_) => Err("Failed to format log message"),
+            }
+        } else {
+            Ok(()) // Silently ignore if not connected
+        }
+    }
+
+    /// Check if USB is connected
+    pub fn is_connected(&self) -> bool {
+        self.connected
+    }
+}
+
 // USB components are now returned directly from init_with_peripheral
 // No global statics needed - Embassy tasks will own the components
 
@@ -34,19 +121,13 @@ impl UsbManager {
     }
 
     /// Initialize USB peripheral with real USB functionality
-    /// Returns the USB device and CDC class for separate task execution
+    /// Returns a USB wrapper that owns the USB device and CDC class
     pub async fn init_with_peripheral(
         &mut self,
         usb: embassy_stm32::peripherals::USB_OTG_FS,
         dp: embassy_stm32::peripherals::PA12,
         dm: embassy_stm32::peripherals::PA11,
-    ) -> Result<
-        (
-            UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
-            CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
-        ),
-        &'static str,
-    > {
+    ) -> Result<UsbWrapper, &'static str> {
         info!("Initializing USB CDC-ACM serial interface...");
 
         // Required buffers for USB driver and device
@@ -106,8 +187,8 @@ impl UsbManager {
         self.initialized = true;
 
         info!("USB CDC-ACM serial interface initialized successfully");
-        info!("USB device and CDC class ready for separate task execution");
-        Ok((usb_device, cdc_class))
+        info!("USB wrapper ready for task execution");
+        Ok(UsbWrapper::new(usb_device, cdc_class))
     }
 }
 
