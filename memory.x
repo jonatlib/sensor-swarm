@@ -1,6 +1,6 @@
 /*
 memory.x
-Linker script for the STM32F411CEU6 (512K Flash, 128K RAM)
+Linker script for the STM32F401CE (512K Flash, 96K RAM)
 */
 
 MEMORY
@@ -18,8 +18,8 @@ MEMORY
   */
   EEPROM_VIRTUAL : ORIGIN = 0x08060000, LENGTH = 128K
 
-  /* Main RAM for stack and variables. */
-  RAM            : ORIGIN = 0x20000000, LENGTH = 128K
+  /* Main RAM for stack and variables. STM32F401 has 96K. */
+  RAM            : ORIGIN = 0x20000000, LENGTH = 96K
 }
 
 /*
