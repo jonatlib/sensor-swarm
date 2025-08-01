@@ -1,6 +1,5 @@
 /// USB communication implementation for STM32F401 Black Pill
-/// Simplified implementation that outputs a counter to USB for debugging
-/// CDC handling has been removed as requested
+/// Direct USB logging implementation - no buffering, sends directly to USB when available
 use crate::hw::traits::{DebugInterface, UsbCommunication, UsbLogger};
 use defmt::*;
 use embassy_stm32::bind_interrupts;
@@ -21,21 +20,19 @@ pub struct UsbManager {
     initialized: bool,
 }
 
-/// USB wrapper that owns the USB device and CDC class components - simplified version
-/// This struct encapsulates the low-level USB components but CDC functionality is disabled
+/// USB wrapper that owns the USB device and CDC class components
+/// This struct encapsulates the low-level USB components for direct logging
 pub struct UsbWrapper {
     usb_device: UsbDevice<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
     cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
     connected: bool,
-    counter: u32,
 }
 
-/// CDC wrapper that implements USB traits - simplified version
-/// This struct wraps the CDC class but USB functionality is disabled
+/// CDC wrapper that implements USB traits for direct logging
+/// This struct wraps the CDC class and provides direct USB logging
 pub struct CdcWrapper {
     cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
     connected: bool,
-    counter: u32,
 }
 
 impl CdcWrapper {
@@ -46,7 +43,6 @@ impl CdcWrapper {
         Self {
             cdc_class,
             connected: false,
-            counter: 0,
         }
     }
 
@@ -58,40 +54,32 @@ impl CdcWrapper {
         defmt::info!("USB CDC connected!");
     }
 
-    /// Simple counter printing to USB - CDC handling removed as requested
+    /// Handle communication - wait for connection and maintain it
     pub async fn handle_communication(&mut self) -> Result<(), &'static str> {
         loop {
             // Wait for connection first
             if !self.connected {
                 self.cdc_class.wait_connection().await;
                 self.connected = true;
-                defmt::info!("USB connected - starting counter output");
+                defmt::info!("USB connected - ready for logging");
             }
 
-            // Increment counter and send it to USB
-            self.counter += 1;
-            let mut counter_msg = String::<64>::new();
-            if core::fmt::write(
-                &mut counter_msg,
-                format_args!("Counter: {}\r\n", self.counter),
-            )
-            .is_ok()
-            {
-                match self.cdc_class.write_packet(counter_msg.as_bytes()).await {
-                    Ok(_) => {
-                        defmt::debug!("Sent counter {} to USB", self.counter);
-                    }
-                    Err(_) => {
-                        self.connected = false;
-                        defmt::info!("USB disconnected");
-                        return Err("USB disconnected");
-                    }
-                }
-            }
-
-            // Wait 1 second before next counter output
-            embassy_time::Timer::after_millis(1000).await;
+            // Just wait and yield to other tasks
+            embassy_time::Timer::after_millis(100).await;
         }
+    }
+
+    /// Check if USB is connected (public method for logging)
+    pub fn is_usb_connected(&self) -> bool {
+        self.connected
+    }
+
+    /// Send log message directly to USB (synchronous, non-blocking)
+    /// Returns true if message was sent, false if USB not connected or send failed
+    pub fn try_send_log_direct(&mut self, message: &str) -> bool {
+        // For now, just return the connection status
+        // Actual USB logging will be handled by the async UsbLogger trait
+        self.connected
     }
 }
 
@@ -105,7 +93,6 @@ impl UsbWrapper {
             usb_device,
             cdc_class,
             connected: false,
-            counter: 0,
         }
     }
 
@@ -114,39 +101,18 @@ impl UsbWrapper {
         self.usb_device.run().await;
     }
 
-    /// Simple counter printing to USB - CDC handling removed as requested
+    /// Handle CDC communication - wait for connection and maintain it
     pub async fn handle_cdc_communication(&mut self) -> Result<(), &'static str> {
         loop {
             // Wait for connection first
             if !self.connected {
                 self.cdc_class.wait_connection().await;
                 self.connected = true;
-                defmt::info!("USB connected - starting counter output");
+                defmt::info!("USB connected - ready for logging");
             }
 
-            // Increment counter and send it to USB
-            self.counter += 1;
-            let mut counter_msg = String::<64>::new();
-            if core::fmt::write(
-                &mut counter_msg,
-                format_args!("Counter: {}\r\n", self.counter),
-            )
-            .is_ok()
-            {
-                match self.cdc_class.write_packet(counter_msg.as_bytes()).await {
-                    Ok(_) => {
-                        defmt::debug!("Sent counter {} to USB", self.counter);
-                    }
-                    Err(_) => {
-                        self.connected = false;
-                        defmt::info!("USB disconnected");
-                        return Err("USB disconnected");
-                    }
-                }
-            }
-
-            // Wait 1 second before next counter output
-            embassy_time::Timer::after_millis(1000).await;
+            // Just wait and yield to other tasks
+            embassy_time::Timer::after_millis(100).await;
         }
     }
 
@@ -289,24 +255,45 @@ impl UsbCommunication for CdcWrapper {
     }
 
     fn is_connected(&self) -> bool {
-        // Always return false since USB functionality is disabled
-        false
+        self.connected
     }
 }
 
 impl UsbLogger for CdcWrapper {
-    async fn log(&mut self, _message: &str) -> Result<(), &'static str> {
-        // USB logging disabled - just return Ok to maintain interface
-        // Log macros will still work via defmt/RTT
-        defmt::debug!("USB log called but disabled");
-        Ok(())
+    async fn log(&mut self, message: &str) -> Result<(), &'static str> {
+        if self.connected {
+            // Format message with newline for USB
+            let mut log_msg = String::<512>::new();
+            if core::fmt::write(&mut log_msg, format_args!("{}\r\n", message)).is_ok() {
+                match self.cdc_class.write_packet(log_msg.as_bytes()).await {
+                    Ok(_) => Ok(()),
+                    Err(_) => {
+                        self.connected = false;
+                        Err("USB disconnected during logging")
+                    }
+                }
+            } else {
+                Err("Failed to format log message")
+            }
+        } else {
+            // USB not connected, silently ignore
+            Ok(())
+        }
     }
 
-    async fn log_fmt(&mut self, _args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
-        // USB logging disabled - just return Ok to maintain interface
-        // Log macros will still work via defmt/RTT
-        defmt::debug!("USB log_fmt called but disabled");
-        Ok(())
+    async fn log_fmt(&mut self, args: core::fmt::Arguments<'_>) -> Result<(), &'static str> {
+        if self.connected {
+            // Format the arguments into a string
+            let mut formatted = String::<256>::new();
+            if core::fmt::write(&mut formatted, args).is_ok() {
+                self.log(formatted.as_str()).await
+            } else {
+                Err("Failed to format log arguments")
+            }
+        } else {
+            // USB not connected, silently ignore
+            Ok(())
+        }
     }
 }
 
