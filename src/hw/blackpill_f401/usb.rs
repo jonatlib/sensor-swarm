@@ -54,7 +54,7 @@ impl CdcWrapper {
         defmt::info!("USB CDC connected!");
     }
 
-    /// Handle communication - wait for connection and maintain it
+    /// Handle communication - wait for connection and process log messages
     pub async fn handle_communication(&mut self) -> Result<(), &'static str> {
         loop {
             // Wait for connection first
@@ -64,8 +64,43 @@ impl CdcWrapper {
                 defmt::info!("USB connected - ready for logging");
             }
 
-            // Just wait and yield to other tasks
-            embassy_time::Timer::after_millis(100).await;
+            // Process queued log messages when connected
+            if self.connected {
+                // Process up to 5 log messages per iteration to avoid blocking
+                let mut processed = 0;
+                while processed < 5 {
+                    if let Some(message) =
+                        crate::hw::blackpill_f401::usb_defmt_logger::dequeue_usb_log_message()
+                    {
+                        // Format message with prefix and newline for USB
+                        let mut log_msg = String::<512>::new();
+                        if core::fmt::write(
+                            &mut log_msg,
+                            format_args!("[LOG] {}\r\n", message.as_str()),
+                        )
+                        .is_ok()
+                        {
+                            match self.cdc_class.write_packet(log_msg.as_bytes()).await {
+                                Ok(_) => {
+                                    processed += 1;
+                                }
+                                Err(_) => {
+                                    // USB disconnected during logging
+                                    self.connected = false;
+                                    defmt::info!("USB disconnected during logging");
+                                    return Err("USB disconnected");
+                                }
+                            }
+                        }
+                    } else {
+                        // No more messages to process
+                        break;
+                    }
+                }
+            }
+
+            // Yield to other tasks
+            embassy_time::Timer::after_millis(10).await;
         }
     }
 
