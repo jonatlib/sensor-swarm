@@ -27,10 +27,7 @@ pub trait DeviceManagement {
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts what it needs for LED initialization
     /// Returns initialized LED instance and remaining peripherals
-    fn init_led(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Led>;
+    fn init_led(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Led>;
 
     /// Initialize USB peripheral from embassy_stm32::init output
     /// This method takes the peripherals struct and extracts what it needs for USB initialization
@@ -51,18 +48,12 @@ pub trait DeviceManagement {
     /// Initialize a timer peripheral and return it pre-configured
     /// This method takes the peripherals struct and extracts what it needs for timer initialization
     /// Returns initialized timer instance and remaining peripherals
-    fn init_timer(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Timer>;
+    fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer>;
 
     /// Initialize an SPI peripheral and return it pre-configured
     /// This method takes the peripherals struct and extracts what it needs for SPI initialization
     /// Returns initialized SPI instance and remaining peripherals
-    fn init_spi(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Spi>;
+    fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)

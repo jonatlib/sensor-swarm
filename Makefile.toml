@@ -152,7 +152,7 @@ dependencies = ["st-probe"]
 
 # dfu-util --device 0483:df11 -D /home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin --alt 0 -s 0x08000000
 command = "dfu-util"
-args = ["--device", "0483:df11", "-D", "target/thumbv7em-none-eabihf/debug/sensor-swarm.bin", "--alt", "0", "-s", "0x08000000"]
+args = ["--device", "0483:df11", "-D", "target/thumbv7em-none-eabihf/debug/sensor-swarm.bin", "--alt", "0", "-s", "0x08000000:leave"]
 dependencies = ["st-probe", "build-binary", "size", "size-small"]
 
 

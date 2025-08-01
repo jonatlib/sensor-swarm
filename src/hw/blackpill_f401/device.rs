@@ -21,8 +21,6 @@ impl BlackPillDevice {
     /// Initialize the device with proper clock configuration
     /// This sets up the system clocks, HSE oscillator, and PLL
     pub fn init(&mut self) -> Result<Config, &'static str> {
-        usb_log!(info, "Initializing STM32F401 Black Pill device...");
-
         let mut config = Config::default();
 
         // Configure HSE (High Speed External) oscillator - 25MHz crystal
@@ -52,11 +50,6 @@ impl BlackPillDevice {
         config.rcc.sys = rcc::Sysclk::PLL1_P;
 
         self.initialized = true;
-        usb_log!(info, "Device initialization completed successfully");
-        usb_log!(
-            info,
-            "System clock: 84MHz, APB1: 42MHz, APB2: 84MHz, USB: 48MHz"
-        );
 
         Ok(config)
     }
@@ -98,29 +91,23 @@ impl DeviceManagement for BlackPillDevice {
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
     /// Returns initialized LED instance and remaining peripherals
-    fn init_led(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Led> {
-        usb_log!(info, "Initializing BlackPill LED on PC13...");
-        
+    fn init_led(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Led> {
         // Extract PC13 for LED initialization using unsafe pointer operations
         // This is necessary because Rust's ownership system doesn't allow partial moves
         // from structs while returning the remaining struct
         let (pc13, remaining_peripherals) = unsafe {
             let mut p = core::mem::ManuallyDrop::new(peripherals);
             let pc13 = core::ptr::read(&p.PC13);
-            
+
             // Reconstruct peripherals without PC13 by creating a new instance
             // Note: This is a workaround - in a real implementation, we'd need
             // a proper way to handle partial peripheral extraction
             let remaining = core::ptr::read(&*p);
             (pc13, remaining)
         };
-        
+
         let led = BlackPillLed::new(pc13);
-        usb_log!(info, "LED initialized on PC13");
-        
+
         Ok((led, remaining_peripherals))
     }
 
@@ -139,7 +126,7 @@ impl DeviceManagement for BlackPillDevice {
             let usb_otg_fs = core::ptr::read(&p.USB_OTG_FS);
             let pa12 = core::ptr::read(&p.PA12);
             let pa11 = core::ptr::read(&p.PA11);
-            
+
             // Reconstruct peripherals without the extracted ones
             let remaining = core::ptr::read(&*p);
             (usb_otg_fs, pa12, pa11, remaining)
@@ -162,17 +149,17 @@ impl DeviceManagement for BlackPillDevice {
             }
         }
 
-        usb_log!(info, "BlackPill peripherals (excluding LED) initialized successfully");
+        usb_log!(
+            info,
+            "BlackPill peripherals (excluding LED) initialized successfully"
+        );
         Ok((usb_manager, remaining_peripherals))
     }
 
     /// Initialize a timer peripheral and return it pre-configured
     /// This method takes the peripherals struct and extracts what it needs for timer initialization
     /// Returns initialized timer instance and remaining peripherals
-    fn init_timer(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Timer> {
+    fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer> {
         usb_log!(info, "Initializing TIM2 peripheral for timer functionality");
 
         // In a full implementation, this would extract the TIM2 peripheral from embassy_stm32::init()
@@ -186,10 +173,7 @@ impl DeviceManagement for BlackPillDevice {
     /// Initialize an SPI peripheral and return it pre-configured
     /// This method takes the peripherals struct and extracts what it needs for SPI initialization
     /// Returns initialized SPI instance and remaining peripherals
-    fn init_spi(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::Spi> {
+    fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi> {
         usb_log!(info, "Initializing SPI1 peripheral for SPI functionality");
 
         // In a full implementation, this would extract the SPI1 peripheral from embassy_stm32::init()
