@@ -55,8 +55,9 @@ impl UsbManager {
         static mut CONTROL_BUF: [u8; 64] = [0; 64];
         static mut MSOS_DESCRIPTOR: [u8; 256] = [0; 256];
 
-        // Create USB OTG config
-        let usb_config = embassy_stm32::usb_otg::Config::default();
+        // Create USB OTG config with proper settings for STM32F401
+        let mut usb_config = embassy_stm32::usb_otg::Config::default();
+        usb_config.vbus_detection = true;  // Enable VBUS detection for proper enumeration
 
         // Create the USB driver
         let driver = Driver::new_fs(usb, Irqs, dp, dm, unsafe { &mut EP_OUT_BUFFER }, usb_config);
@@ -99,10 +100,11 @@ impl UsbManager {
             CDC_CLASS = Some(cdc_class);
         }
 
-        self.connected = true;
+        self.connected = false; // Will be set to true when USB is actually enumerated
         self.initialized = true;
 
         info!("USB CDC-ACM serial interface initialized successfully");
+        info!("USB device ready for enumeration - call run_usb_task() continuously");
         Ok(())
     }
 
@@ -110,6 +112,7 @@ impl UsbManager {
     pub async fn run_usb_task(&mut self) -> Result<(), &'static str> {
         unsafe {
             if let Some(ref mut usb_device) = USB_DEVICE {
+                // Run USB device for a short time to allow cooperative multitasking
                 usb_device.run().await;
                 Ok(())
             } else {
