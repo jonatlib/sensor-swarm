@@ -89,21 +89,63 @@ where
         Ok(())
     }
 
-    /// Main command processing loop - DISABLED
-    /// USB functionality removed as requested, but structure kept
+    /// Main command processing loop
+    /// This should be called as an embassy task
     pub async fn run(&mut self) -> Result<(), &'static str> {
-        defmt::info!("USB command handler disabled - commands not processed");
         loop {
-            // USB functionality disabled - just wait
-            embassy_time::Timer::after_millis(1000).await;
+            // Check if USB is connected
+            if !self.usb_manager.is_connected() {
+                // Wait a bit before checking again
+                embassy_time::Timer::after_millis(100).await;
+                continue;
+            }
+
+            // Try to receive a command
+            match self.receive_command().await {
+                Ok(Some(command)) => {
+                    let response = self.process_command(command).await;
+                    if let Err(e) = self.send_response(response).await {
+                        warn!("Failed to send response: {}", e);
+                    }
+                }
+                Ok(None) => {
+                    // No command received, continue
+                }
+                Err(e) => {
+                    warn!("Error receiving command: {}", e);
+                }
+            }
         }
     }
 
-    /// Receive and parse a command from USB - DISABLED
+    /// Receive and parse a command from USB
     async fn receive_command(&mut self) -> Result<Option<UsbCommand>, &'static str> {
-        // USB functionality disabled - return None (no commands)
-        defmt::debug!("USB receive_command called but disabled");
-        Ok(None)
+        // Clear the command buffer
+        self.command_buffer.clear();
+
+        // Read bytes until we get a complete command (terminated by newline)
+        let mut temp_buffer = [0u8; 32];
+        loop {
+            match self.usb_manager.receive_bytes(&mut temp_buffer).await {
+                Ok(0) => return Ok(None), // No data available
+                Ok(bytes_read) => {
+                    for &byte in &temp_buffer[..bytes_read] {
+                        if byte == COMMAND_TERMINATOR {
+                            // Command complete, parse it
+                            return Ok(Some(self.parser.parse_command(&self.command_buffer)));
+                        } else if self.command_buffer.len() < self.command_buffer.capacity() - 1 {
+                            let _ = self.command_buffer.push(byte);
+                        } else {
+                            // Command too long
+                            let mut error_msg = heapless::String::new();
+                            let _ = error_msg.push_str("COMMAND_TOO_LONG");
+                            return Ok(Some(UsbCommand::Unknown(error_msg)));
+                        }
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+        }
     }
 
     /// Process a command and generate a response
@@ -154,10 +196,18 @@ where
         }
     }
 
-    /// Send a response over USB - DISABLED
-    async fn send_response(&mut self, _response: UsbResponse) -> Result<(), &'static str> {
-        // USB functionality disabled - just return Ok to maintain interface
-        defmt::debug!("USB send_response called but disabled");
+    /// Send a response over USB
+    async fn send_response(&mut self, response: UsbResponse) -> Result<(), &'static str> {
+        // Format the response
+        let response_text = self.response_formatter.format_response(response);
+
+        // Convert to bytes and send
+        let response_bytes = response_text.as_bytes();
+        self.usb_manager.send_bytes(response_bytes).await?;
+
+        // Send terminator
+        self.usb_manager.send_bytes(&[COMMAND_TERMINATOR]).await?;
+
         Ok(())
     }
 }

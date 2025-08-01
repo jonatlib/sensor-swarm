@@ -54,14 +54,16 @@ impl CdcWrapper {
         defmt::info!("USB CDC connected!");
     }
 
-    /// Handle communication - wait for connection and process log messages
+    /// Handle communication - wait for connection, process log messages and handle commands
     pub async fn handle_communication(&mut self) -> Result<(), &'static str> {
+        let mut command_buffer = heapless::Vec::<u8, 256>::new();
+
         loop {
             // Wait for connection first
             if !self.connected {
                 self.cdc_class.wait_connection().await;
                 self.connected = true;
-                defmt::info!("USB connected - ready for logging");
+                defmt::info!("USB connected - ready for logging and commands");
             }
 
             // Process queued log messages when connected
@@ -95,6 +97,65 @@ impl CdcWrapper {
                     } else {
                         // No more messages to process
                         break;
+                    }
+                }
+
+                // Check for incoming commands (non-blocking)
+                let mut temp_buffer = [0u8; 32];
+                match embassy_futures::select::select(
+                    self.cdc_class.read_packet(&mut temp_buffer),
+                    embassy_time::Timer::after_millis(1), // Very short timeout for non-blocking
+                )
+                .await
+                {
+                    embassy_futures::select::Either::First(result) => {
+                        match result {
+                            Ok(len) if len > 0 => {
+                                // Process received bytes for commands
+                                for &byte in &temp_buffer[..len] {
+                                    if byte == b'\n' {
+                                        // Command complete, echo it back as a simple response
+                                        if !command_buffer.is_empty() {
+                                            let mut response = String::<512>::new();
+                                            let cmd_str = core::str::from_utf8(&command_buffer)
+                                                .unwrap_or("INVALID_UTF8");
+                                            if core::fmt::write(
+                                                &mut response,
+                                                format_args!("[CMD] Received: {}\r\n", cmd_str),
+                                            )
+                                            .is_ok()
+                                            {
+                                                let _ = self
+                                                    .cdc_class
+                                                    .write_packet(response.as_bytes())
+                                                    .await;
+                                            }
+                                            command_buffer.clear();
+                                        }
+                                    } else if command_buffer.len() < command_buffer.capacity() - 1 {
+                                        let _ = command_buffer.push(byte);
+                                    } else {
+                                        // Command too long, clear buffer
+                                        command_buffer.clear();
+                                        let error_msg = "[CMD] Command too long\r\n";
+                                        let _ =
+                                            self.cdc_class.write_packet(error_msg.as_bytes()).await;
+                                    }
+                                }
+                            }
+                            Ok(_) => {
+                                // No data received
+                            }
+                            Err(_) => {
+                                // USB disconnected
+                                self.connected = false;
+                                defmt::info!("USB disconnected during command handling");
+                                return Err("USB disconnected");
+                            }
+                        }
+                    }
+                    embassy_futures::select::Either::Second(_) => {
+                        // Timeout - no command data available
                     }
                 }
             }
@@ -277,16 +338,42 @@ impl UsbManager {
 
 // USB trait implementations for CdcWrapper - DISABLED as requested
 impl UsbCommunication for CdcWrapper {
-    async fn send_bytes(&mut self, _data: &[u8]) -> Result<(), &'static str> {
-        // USB functionality disabled - just return Ok to maintain interface
-        defmt::debug!("USB send_bytes called but disabled");
-        Ok(())
+    async fn send_bytes(&mut self, data: &[u8]) -> Result<(), &'static str> {
+        if self.connected {
+            match self.cdc_class.write_packet(data).await {
+                Ok(_) => {
+                    defmt::debug!("Sent {} bytes over USB", data.len());
+                    Ok(())
+                }
+                Err(_) => {
+                    self.connected = false;
+                    defmt::warn!("USB disconnected during send");
+                    Err("USB send failed")
+                }
+            }
+        } else {
+            Err("USB not connected")
+        }
     }
 
-    async fn receive_bytes(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
-        // USB functionality disabled - return 0 bytes received
-        defmt::debug!("USB receive_bytes called but disabled");
-        Ok(0)
+    async fn receive_bytes(&mut self, buffer: &mut [u8]) -> Result<usize, &'static str> {
+        if self.connected {
+            match self.cdc_class.read_packet(buffer).await {
+                Ok(len) => {
+                    if len > 0 {
+                        defmt::debug!("Received {} bytes over USB", len);
+                    }
+                    Ok(len)
+                }
+                Err(_) => {
+                    self.connected = false;
+                    defmt::warn!("USB disconnected during receive");
+                    Err("USB receive failed")
+                }
+            }
+        } else {
+            Err("USB not connected")
+        }
     }
 
     fn is_connected(&self) -> bool {
