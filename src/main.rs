@@ -15,7 +15,6 @@ use embassy_executor::Spawner;
 use embassy_futures::join::{join, join3};
 // Import hardware abstraction and application logic
 use sensor_swarm::app::SensorApp;
-use sensor_swarm::hw::blackpill_f401::usb_defmt_logger::process_usb_log_queue;
 use sensor_swarm::hw::traits::{DeviceManagement, Led};
 use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb_log;

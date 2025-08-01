@@ -15,49 +15,45 @@ pub fn init_usb_logging_bridge(usb_wrapper: &'static mut UsbWrapper) {
     info!("USB logging bridge initialized");
 }
 
-/// Macro to log to both defmt (RTT) and USB
+/// Macro to log to defmt (RTT) only - USB logging disabled as requested
 /// Usage: usb_log!(info, "Message: {}", value);
 #[macro_export]
 macro_rules! usb_log {
     (info, $($arg:tt)*) => {
         {
             defmt::info!($($arg)*);
-            $crate::hw::blackpill_f401::usb_defmt_logger::queue_usb_log_message(&format_args!($($arg)*));
+            // USB logging disabled - only defmt/RTT logging remains
         }
     };
     (warn, $($arg:tt)*) => {
         {
             defmt::warn!($($arg)*);
-            $crate::hw::blackpill_f401::usb_defmt_logger::queue_usb_log_message(&format_args!($($arg)*));
+            // USB logging disabled - only defmt/RTT logging remains
         }
     };
     (error, $($arg:tt)*) => {
         {
             defmt::error!($($arg)*);
-            $crate::hw::blackpill_f401::usb_defmt_logger::queue_usb_log_message(&format_args!($($arg)*));
+            // USB logging disabled - only defmt/RTT logging remains
         }
     };
     (debug, $($arg:tt)*) => {
         {
             defmt::debug!($($arg)*);
-            $crate::hw::blackpill_f401::usb_defmt_logger::queue_usb_log_message(&format_args!($($arg)*));
+            // USB logging disabled - only defmt/RTT logging remains
         }
     };
     (trace, $($arg:tt)*) => {
         {
             defmt::trace!($($arg)*);
-            $crate::hw::blackpill_f401::usb_defmt_logger::queue_usb_log_message(&format_args!($($arg)*));
+            // USB logging disabled - only defmt/RTT logging remains
         }
     };
 }
 
-/// Queue a formatted log message for USB transmission
-pub fn queue_usb_log_message(args: &core::fmt::Arguments<'_>) {
-    use heapless::String;
-    let mut formatted = String::<USB_LOG_MESSAGE_SIZE>::new();
-    if core::fmt::write(&mut formatted, *args).is_ok() {
-        queue_usb_log_str(formatted.as_str());
-    }
+/// Queue a formatted log message for USB transmission - DISABLED
+pub fn queue_usb_log_message(_args: &core::fmt::Arguments<'_>) {
+    // USB logging disabled - function kept for compatibility
 }
 
 /// Simple ring buffer for USB log messages
@@ -85,18 +81,11 @@ fn queue_usb_log_str(message: &str) {
     }
 }
 
-/// Dequeue a log message for USB transmission
-/// Returns None if queue is empty
+/// Dequeue a log message for USB transmission - DISABLED
+/// Returns None since USB logging is disabled
 pub fn dequeue_usb_log_message() -> Option<heapless::String<USB_LOG_MESSAGE_SIZE>> {
-    unsafe {
-        if USB_LOG_QUEUE_HEAD != USB_LOG_QUEUE_TAIL {
-            let message = USB_LOG_QUEUE[USB_LOG_QUEUE_TAIL].take();
-            USB_LOG_QUEUE_TAIL = (USB_LOG_QUEUE_TAIL + 1) % USB_LOG_QUEUE_SIZE;
-            message
-        } else {
-            None
-        }
-    }
+    // USB logging disabled - always return None
+    None
 }
 
 /// Process queued USB log messages
