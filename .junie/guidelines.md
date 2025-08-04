@@ -20,3 +20,12 @@ We are not re-implementing wheel,
 so if there is existing crate we rather use that instead of writing our own implementations.
 
 We are using Embassy framework.
+
+## Project structure
+
+All HW dependent code should be under `hw` module under specific HW.
+These should be smallest possible to only implement HW layer.
+All these should be also presented in traits in `hw` module.
+
+All HW agnostic code should be outside of `hw` module, and can be dependent on the `hw` traits.
+But not directly on specific HW.
