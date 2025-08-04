@@ -74,8 +74,11 @@ async fn main(spawner: Spawner) -> ! {
     // Create shared terminal using the UsbCdcWrapper directly
     let shared_terminal = create_shared_terminal(usb_wrapper);
 
+    // Create a separate device manager instance for the command handler
+    let command_device_manager = BlackPillDevice::new();
+    
     // Spawn command handler task using the new Terminal-based approach
-    spawner.spawn(command_handler_task(shared_terminal)).unwrap();
+    spawner.spawn(command_handler_task(shared_terminal, command_device_manager)).unwrap();
 
     // Create the hardware-agnostic sensor application
     let mut app = SensorApp::new(led, device_manager);
@@ -86,11 +89,11 @@ async fn main(spawner: Spawner) -> ! {
 
 
 #[embassy_executor::task]
-async fn command_handler_task(terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>) {
+async fn command_handler_task(terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>, device_manager: BlackPillDevice) {
     info!("Starting command handler task using Terminal-based approach");
 
     // Run the command handler - it will handle connection waiting internally
-    match run_command_handler(terminal).await {
+    match run_command_handler(terminal, device_manager).await {
         Ok(_) => {
             info!("Command handler completed successfully");
         }

@@ -6,6 +6,7 @@
 
 use crate::terminal::SharedTerminal;
 use crate::usb::UsbCdc;
+use crate::hw::traits::DeviceManagement;
 
 // Sub-modules
 pub mod input;
@@ -16,22 +17,22 @@ pub mod executor;
 pub use parser::{Command, SensorType};
 pub use input::InputHandler;
 pub use parser::CommandParser;
-pub use executor::CommandExecutor;
+pub use executor::{CommandExecutor, Response, SensorValue};
 
 /// Main command handler that coordinates all sub-modules
-pub struct CommandHandler<T: UsbCdc> {
+pub struct CommandHandler<T: UsbCdc, D: DeviceManagement> {
     input_handler: InputHandler<T>,
     parser: CommandParser,
-    executor: CommandExecutor,
+    executor: CommandExecutor<D>,
 }
 
-impl<T: UsbCdc> CommandHandler<T> {
-    /// Create a new command handler with the given shared terminal
-    pub fn new(terminal: SharedTerminal<T>) -> Self {
+impl<T: UsbCdc, D: DeviceManagement> CommandHandler<T, D> {
+    /// Create a new command handler with the given shared terminal and device manager
+    pub fn new(terminal: SharedTerminal<T>, device_manager: D) -> Self {
         Self {
             input_handler: InputHandler::new(terminal),
             parser: CommandParser::new(),
-            executor: CommandExecutor::new(),
+            executor: CommandExecutor::new(device_manager),
         }
     }
 
@@ -48,8 +49,9 @@ impl<T: UsbCdc> CommandHandler<T> {
                     // Execute the command
                     let response = self.executor.execute(command).await;
                     
-                    // Send response back through input handler
-                    let _ = self.input_handler.send_response(response.as_str()).await;
+                    // Convert response to string and send back through input handler
+                    let response_str = self.executor.response_to_string(&response);
+                    let _ = self.input_handler.send_response(response_str.as_str()).await;
                 }
                 Ok(None) => {
                     // No complete command yet, continue reading
@@ -73,7 +75,7 @@ impl<T: UsbCdc> CommandHandler<T> {
 
 /// Create and run a command handler task
 /// This is a convenience function for spawning the command handler
-pub async fn run_command_handler<T: UsbCdc>(terminal: SharedTerminal<T>) -> Result<(), &'static str> {
-    let mut handler = CommandHandler::new(terminal);
+pub async fn run_command_handler<T: UsbCdc, D: DeviceManagement>(terminal: SharedTerminal<T>, device_manager: D) -> Result<(), &'static str> {
+    let mut handler = CommandHandler::new(terminal, device_manager);
     handler.run().await
 }
