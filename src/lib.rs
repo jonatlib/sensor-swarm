@@ -5,10 +5,16 @@
 #[cfg(feature = "embedded")]
 pub mod app;
 #[cfg(feature = "embedded")]
+pub mod commands;
+#[cfg(feature = "embedded")]
 pub mod hw;
+#[cfg(feature = "embedded")]
+pub mod logging;
 pub mod radio;
 #[cfg(feature = "embedded")]
 pub mod sensors;
+#[cfg(feature = "embedded")]
+pub mod terminal;
 #[cfg(feature = "embedded")]
 pub mod usb_commands;
 

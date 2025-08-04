@@ -12,12 +12,14 @@ use defmt_rtt as _;
 use defmt_semihosting as _;
 
 use embassy_executor::Spawner;
-use embassy_futures::join::{join, join3};
+// Embassy futures join removed - not needed with new architecture
 // Import hardware abstraction and application logic
 use sensor_swarm::app::SensorApp;
 use sensor_swarm::hw::traits::{DeviceManagement, Led};
 use sensor_swarm::hw::BlackPillDevice;
-use sensor_swarm::usb_log;
+use sensor_swarm::hw::blackpill_f401::usb::UsbCdcWrapper;
+use sensor_swarm::terminal::create_shared_terminal;
+use sensor_swarm::commands::run_command_handler;
 
 #[cfg(not(test))]
 #[embassy_executor::main]
@@ -69,14 +71,20 @@ async fn main(spawner: Spawner) -> ! {
     embassy_time::Timer::after_millis(200).await;
     embassy_time::Timer::after_millis(1000).await;
 
-    // Split USB wrapper to use trait-based architecture with spawned tasks
-    let (usb_device, cdc_wrapper) = usb_wrapper.split_with_traits();
+    // Split USB wrapper to get USB device and CDC class
+    let (usb_device, cdc_class) = usb_wrapper.split();
+
+    // Create UsbCdcWrapper from CDC class
+    let usb_cdc_wrapper = UsbCdcWrapper::new(cdc_class);
+
+    // Create shared terminal using the UsbCdcWrapper
+    let shared_terminal = create_shared_terminal(usb_cdc_wrapper);
 
     // Spawn USB device task
     spawner.spawn(usb_device_task(usb_device)).unwrap();
 
-    // Spawn USB commands task that handles CDC communication and logging
-    spawner.spawn(usb_commands_task(cdc_wrapper)).unwrap();
+    // Spawn command handler task using the new Terminal-based approach
+    spawner.spawn(command_handler_task(shared_terminal)).unwrap();
 
     // Create the hardware-agnostic sensor application
     let mut app = SensorApp::new(led, device_manager);
@@ -100,19 +108,16 @@ async fn usb_device_task(
 }
 
 #[embassy_executor::task]
-async fn usb_commands_task(mut cdc_wrapper: sensor_swarm::hw::blackpill_f401::usb::CdcWrapper) {
-    info!("Starting USB commands task for CDC communication and logging");
+async fn command_handler_task(terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>) {
+    info!("Starting command handler task using Terminal-based approach");
 
-    loop {
-        // Wait for USB connection
-        cdc_wrapper.wait_connection().await;
-        info!("USB CDC connected - starting command and logging handling");
-
-        // Handle communication (includes logging queue processing and command handling)
-        let _ = cdc_wrapper.handle_communication().await;
-
-        info!("USB CDC disconnected - waiting for reconnection");
-        // Small delay before trying to reconnect
-        embassy_time::Timer::after_millis(100).await;
+    // Run the command handler - it will handle connection waiting internally
+    match run_command_handler(terminal).await {
+        Ok(_) => {
+            info!("Command handler completed successfully");
+        }
+        Err(e) => {
+            info!("Command handler error: {}", e);
+        }
     }
 }

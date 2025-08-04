@@ -855,6 +855,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-stm32",
+ "embassy-sync 0.5.0",
  "embassy-time",
  "embassy-usb",
  "heapless 0.8.0",

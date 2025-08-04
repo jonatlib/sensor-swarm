@@ -1,6 +1,6 @@
 /// USB communication implementation for STM32F401 Black Pill
 /// Direct USB logging implementation - no buffering, sends directly to USB when available
-use crate::hw::traits::{DebugInterface, UsbCommunication, UsbLogger};
+use crate::hw::traits::{DebugInterface, UsbCommunication, UsbLogger, UsbCdc};
 use defmt::*;
 use embassy_stm32::bind_interrupts;
 use embassy_stm32::usb_otg::Driver;
@@ -33,6 +33,80 @@ pub struct UsbWrapper {
 pub struct CdcWrapper {
     cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
     connected: bool,
+}
+
+/// Simple USB CDC wrapper that implements the UsbCdc trait
+/// This struct provides basic read/write operations for USB CDC communication
+pub struct UsbCdcWrapper {
+    cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    connected: bool,
+}
+
+impl UsbCdcWrapper {
+    /// Create a new USB CDC wrapper with the given CDC class
+    pub fn new(
+        cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    ) -> Self {
+        Self {
+            cdc_class,
+            connected: false,
+        }
+    }
+}
+
+impl UsbCdc for UsbCdcWrapper {
+    /// Write bytes to USB CDC
+    async fn write(&mut self, data: &[u8]) -> Result<usize, &'static str> {
+        if !self.connected {
+            return Err("USB not connected");
+        }
+        
+        match self.cdc_class.write_packet(data).await {
+            Ok(_) => Ok(data.len()),
+            Err(_) => {
+                self.connected = false;
+                Err("USB write failed")
+            }
+        }
+    }
+
+    /// Read bytes from USB CDC (non-blocking)
+    async fn read(&mut self, buffer: &mut [u8]) -> Result<usize, &'static str> {
+        if !self.connected {
+            return Err("USB not connected");
+        }
+
+        // Use a very short timeout to make it non-blocking
+        match embassy_futures::select::select(
+            self.cdc_class.read_packet(buffer),
+            embassy_time::Timer::after_millis(1),
+        ).await {
+            embassy_futures::select::Either::First(result) => {
+                match result {
+                    Ok(len) => Ok(len),
+                    Err(_) => {
+                        self.connected = false;
+                        Err("USB read failed")
+                    }
+                }
+            }
+            embassy_futures::select::Either::Second(_) => {
+                // Timeout - no data available
+                Ok(0)
+            }
+        }
+    }
+
+    /// Check if USB CDC is connected and ready for communication
+    fn is_connected(&self) -> bool {
+        self.connected
+    }
+
+    /// Wait for USB CDC connection
+    async fn wait_connection(&mut self) {
+        self.cdc_class.wait_connection().await;
+        self.connected = true;
+    }
 }
 
 impl CdcWrapper {
