@@ -15,6 +15,8 @@ use embassy_executor::Spawner;
 // Embassy futures join removed - not needed with new architecture
 // Import hardware abstraction and application logic
 use sensor_swarm::app::SensorApp;
+use sensor_swarm::backup_domain::BackupDomain;
+use sensor_swarm::boot_task::execute_boot_task;
 use sensor_swarm::hw::traits::{DeviceManagement, Led};
 use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb::UsbCdcWrapper;
@@ -33,9 +35,24 @@ async fn main(spawner: Spawner) -> ! {
     let embassy_config = device_manager.init().expect("Device initialization failed");
     let p = embassy_stm32::init(embassy_config);
 
+    // Initialize RTC and backup domain for boot task management FIRST (right after clock init)
+    let (backup_registers, remaining_peripherals) = device_manager
+        .init_rtc(p)
+        .expect("RTC initialization failed");
+    
+    // Create backup domain for boot task management
+    let mut backup_domain = BackupDomain::new(backup_registers);
+    
+    // Check for pending boot tasks and read them, then execute immediately
+    let boot_task = backup_domain.boot_task().read_and_clear();
+    info!("Boot task consumed: {:?}", boot_task);
+    
+    // Execute the boot task directly (not as a spawned task)
+    execute_boot_task(boot_task);
+
     // Initialize LED first for early debugging (hardware-agnostic)
     let (mut led, remaining_peripherals) = device_manager
-        .init_led(p)
+        .init_led(remaining_peripherals)
         .expect("LED initialization failed");
 
     // Blink LED once to indicate LED initialization complete
@@ -49,7 +66,7 @@ async fn main(spawner: Spawner) -> ! {
     embassy_time::Timer::after_millis(1000).await;
 
     // Initialize USB using hardware abstraction
-    let (usb_wrapper, _remaining_peripherals) = device_manager
+    let (usb_wrapper, remaining_peripherals) = device_manager
         .init_usb(remaining_peripherals)
         .await
         .expect("USB initialization failed");

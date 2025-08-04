@@ -23,6 +23,8 @@ pub trait DeviceManagement {
     type Led: crate::hw::traits::Led;
     /// USB Wrapper type that will be returned by init_usb
     type UsbWrapper;
+    /// BackupRegisters type that will be returned by init_rtc
+    type BackupRegisters: crate::hw::traits::BackupRegisters;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts what it needs for LED initialization
@@ -54,6 +56,11 @@ pub trait DeviceManagement {
     /// This method takes the peripherals struct and extracts what it needs for SPI initialization
     /// Returns initialized SPI instance and remaining peripherals
     fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi>;
+
+    /// Initialize RTC peripheral and return backup registers wrapper
+    /// This method takes the peripherals struct and extracts what it needs for RTC initialization
+    /// Returns initialized backup registers instance and remaining peripherals
+    fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)
@@ -134,4 +141,18 @@ pub trait FlashStorage {
 
     /// Get the total flash size available for storage
     fn total_size(&self) -> u32;
+}
+
+/// Trait for abstracting backup register operations
+/// Implementations should provide hardware-agnostic access to backup registers
+/// that retain their values across system resets (but not power loss)
+pub trait BackupRegisters {
+    /// Read a u32 value from the specified backup register index
+    fn read_register(&self, index: usize) -> u32;
+
+    /// Write a u32 value to the specified backup register index
+    fn write_register(&mut self, index: usize, value: u32);
+
+    /// Get the number of available backup registers
+    fn register_count(&self) -> usize;
 }

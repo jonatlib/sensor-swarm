@@ -5,6 +5,10 @@
 #[cfg(feature = "embedded")]
 pub mod app;
 #[cfg(feature = "embedded")]
+pub mod backup_domain;
+#[cfg(feature = "embedded")]
+pub mod boot_task;
+#[cfg(feature = "embedded")]
 pub mod commands;
 #[cfg(feature = "embedded")]
 pub mod hw;

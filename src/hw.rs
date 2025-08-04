@@ -5,12 +5,16 @@
 /// Hardware abstraction traits
 pub mod traits;
 
+/// Types for backup register management
+pub mod types;
+
 /// STM32F401 Black Pill implementation
 #[cfg(feature = "blackpill-f401")]
 pub mod blackpill_f401;
 
 // Re-export commonly used items
 pub use traits::*;
+pub use types::*;
 
 #[cfg(feature = "blackpill-f401")]
 pub use blackpill_f401::{

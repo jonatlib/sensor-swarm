@@ -1,3 +1,4 @@
+use crate::hw::blackpill_f401::backup_registers::BlackPillBackupRegisters;
 use crate::hw::blackpill_f401::led::BlackPillLed;
 use crate::hw::blackpill_f401::usb::UsbManager;
 /// Device initialization and management for STM32F401 Black Pill
@@ -90,6 +91,8 @@ impl DeviceManagement for BlackPillDevice {
     type Led = BlackPillLed;
     /// USB Wrapper type - using UsbCdcWrapper for USB communication
     type UsbWrapper = crate::usb::UsbCdcWrapper;
+    /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
+    type BackupRegisters = BlackPillBackupRegisters;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
@@ -181,6 +184,36 @@ impl DeviceManagement for BlackPillDevice {
 
         usb_log!(warn, "SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
         Err("SPI peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
+    }
+
+    /// Initialize RTC peripheral and return backup registers wrapper
+    /// This method takes the peripherals struct and extracts what it needs for RTC initialization
+    /// Returns initialized backup registers instance and remaining peripherals
+    fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters> {
+        usb_log!(info, "Initializing RTC peripheral for backup registers functionality");
+
+        // Extract RTC peripheral using unsafe pointer operations
+        let (rtc_peripheral, remaining_peripherals) = unsafe {
+            let mut p = core::mem::ManuallyDrop::new(peripherals);
+            let rtc_peripheral = core::ptr::read(&p.RTC);
+
+            // Reconstruct peripherals without the extracted RTC
+            let remaining = core::ptr::read(&*p);
+            (rtc_peripheral, remaining)
+        };
+
+        // Initialize RTC with default configuration
+        // The LSE clock source should be configured at the system level in embassy_stm32::init()
+        let rtc_config = embassy_stm32::rtc::RtcConfig::default();
+
+        // Create RTC instance
+        let rtc = embassy_stm32::rtc::Rtc::new(rtc_peripheral, rtc_config);
+
+        // Create backup registers wrapper
+        let backup_registers = BlackPillBackupRegisters::new(rtc);
+
+        usb_log!(info, "RTC and backup registers initialized successfully");
+        Ok((backup_registers, remaining_peripherals))
     }
 
     /// Reboot the device normally
