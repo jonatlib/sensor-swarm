@@ -88,8 +88,8 @@ impl DeviceManagement for BlackPillDevice {
     type Spi = embassy_stm32::peripherals::SPI1;
     /// LED type - using BlackPillLed for PC13
     type Led = BlackPillLed;
-    /// USB Wrapper type - using UsbWrapper for USB communication
-    type UsbWrapper = crate::hw::blackpill_f401::usb::UsbWrapper;
+    /// USB Wrapper type - using UsbCdcWrapper for USB communication
+    type UsbWrapper = crate::usb::UsbCdcWrapper;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
@@ -120,7 +120,7 @@ impl DeviceManagement for BlackPillDevice {
     async fn init_usb(
         &mut self,
         peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<crate::hw::blackpill_f401::usb::UsbWrapper> {
+    ) -> InitResult<Self::UsbWrapper> {
         usb_log!(info, "Initializing BlackPill USB...");
 
         // Extract USB peripherals using unsafe pointer operations

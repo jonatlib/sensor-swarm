@@ -116,24 +116,6 @@ pub trait UsbLogger {
 // SPI functionality is provided directly by Embassy SPI traits
 // No custom trait needed - use embassy_stm32::spi::Spi and related traits directly
 
-/// Trait for hardware-dependent USB CDC serial communication
-/// This trait provides basic read/write operations for USB serial communication
-/// Implementations should handle the actual USB CDC-ACM communication
-pub trait UsbCdc {
-    /// Write bytes to USB CDC
-    /// Returns the number of bytes written or an error
-    fn write(&mut self, data: &[u8]) -> impl core::future::Future<Output = Result<usize, &'static str>>;
-
-    /// Read bytes from USB CDC (non-blocking)
-    /// Returns the number of bytes read or an error
-    fn read(&mut self, buffer: &mut [u8]) -> impl core::future::Future<Output = Result<usize, &'static str>>;
-
-    /// Check if USB CDC is connected and ready for communication
-    fn is_connected(&self) -> bool;
-
-    /// Wait for USB CDC connection
-    fn wait_connection(&mut self) -> impl core::future::Future<Output = ()>;
-}
 
 /// Trait for abstracting Flash/EEPROM operations
 /// Implementations should provide hardware-agnostic persistent storage

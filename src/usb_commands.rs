@@ -13,8 +13,10 @@
 /// - responses: Response types and formatting
 /// - sensor_commands: Sensor-related command handlers
 /// - system_commands: System-related command handlers
-use crate::hw::traits::{DeviceManagement, UsbCommunication, UsbLogger};
+use crate::hw::traits::DeviceManagement;
 use crate::sensors::traits::EnvironmentalSensor;
+use crate::terminal::Terminal;
+use crate::usb::UsbCdc;
 use defmt::*;
 use heapless::Vec;
 
@@ -36,36 +38,35 @@ const COMMAND_TERMINATOR: u8 = b'\n';
 /// USB Command Handler
 ///
 /// This struct manages USB command processing and response generation.
-/// It's designed to be hardware-agnostic and work with any implementation
-/// of the UsbCommunication trait. It coordinates between different command
-/// handlers for better modularity.
-pub struct UsbCommandHandler<U, S, D>
+/// It's designed to be hardware-agnostic and work with any Terminal implementation.
+/// It coordinates between different command handlers for better modularity.
+pub struct UsbCommandHandler<T, S, D>
 where
-    U: UsbCommunication + UsbLogger,
+    T: UsbCdc,
     S: EnvironmentalSensor,
     D: DeviceManagement,
 {
-    usb_manager: U,
+    terminal: Terminal<T>,
     device_manager: D,
     parser: CommandParser,
     sensor_handler: SensorCommandHandler<S>,
-    system_handler: SystemCommandHandler<U>,
+    system_handler: SystemCommandHandler,
     response_formatter: ResponseFormatter,
     command_buffer: Vec<u8, 256>,
     response_buffer: Vec<u8, 512>,
 }
 
-impl<U, S, D> UsbCommandHandler<U, S, D>
+impl<T, S, D> UsbCommandHandler<T, S, D>
 where
-    U: UsbCommunication + UsbLogger + Clone,
+    T: UsbCdc,
     S: EnvironmentalSensor,
     D: DeviceManagement,
 {
     /// Create a new USB command handler
-    pub fn new(usb_manager: U, device_manager: D) -> Self {
+    pub fn new(terminal: Terminal<T>, device_manager: D) -> Self {
         Self {
-            system_handler: SystemCommandHandler::new(usb_manager.clone()),
-            usb_manager,
+            system_handler: SystemCommandHandler::new(),
+            terminal,
             device_manager,
             parser: CommandParser::new(),
             sensor_handler: SensorCommandHandler::new(),
@@ -94,7 +95,7 @@ where
     pub async fn run(&mut self) -> Result<(), &'static str> {
         loop {
             // Check if USB is connected
-            if !self.usb_manager.is_connected() {
+            if !self.terminal.is_connected() {
                 // Wait a bit before checking again
                 embassy_time::Timer::after_millis(100).await;
                 continue;
@@ -126,7 +127,7 @@ where
         // Read bytes until we get a complete command (terminated by newline)
         let mut temp_buffer = [0u8; 32];
         loop {
-            match self.usb_manager.receive_bytes(&mut temp_buffer).await {
+            match self.terminal.read_bytes(&mut temp_buffer).await {
                 Ok(0) => return Ok(None), // No data available
                 Ok(bytes_read) => {
                     for &byte in &temp_buffer[..bytes_read] {
@@ -165,7 +166,7 @@ where
                 let sensor_count = self.sensor_handler.sensor_count();
                 let sensor_ready = self.sensor_handler.is_sensor_ready();
                 self.system_handler
-                    .process_system_command(command, sensor_count, sensor_ready)
+                    .process_system_command(command, sensor_count, sensor_ready, &self.terminal)
                     .await
             }
 
@@ -203,10 +204,10 @@ where
 
         // Convert to bytes and send
         let response_bytes = response_text.as_bytes();
-        self.usb_manager.send_bytes(response_bytes).await?;
+        self.terminal.write_bytes(response_bytes).await?;
 
         // Send terminator
-        self.usb_manager.send_bytes(&[COMMAND_TERMINATOR]).await?;
+        self.terminal.write_bytes(&[COMMAND_TERMINATOR]).await?;
 
         Ok(())
     }
@@ -214,17 +215,17 @@ where
 
 /// Convenience function to create and run a USB command handler task
 /// This can be used in the main application to easily set up USB command handling
-pub async fn run_usb_command_handler<U, S, D>(
-    usb_manager: U,
+pub async fn run_usb_command_handler<T, S, D>(
+    terminal: Terminal<T>,
     device_manager: D,
     sensor: Option<S>,
 ) -> Result<(), &'static str>
 where
-    U: UsbCommunication + UsbLogger + Clone,
+    T: UsbCdc,
     S: EnvironmentalSensor,
     D: DeviceManagement,
 {
-    let mut handler = UsbCommandHandler::new(usb_manager, device_manager);
+    let mut handler = UsbCommandHandler::new(terminal, device_manager);
 
     if let Some(sensor) = sensor {
         handler.set_sensor(sensor);

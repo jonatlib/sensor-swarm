@@ -2,7 +2,7 @@
 /// This module provides a Terminal struct that can work with any UsbCdc implementation
 /// The Terminal handles logging, command input/output, and can be shared between tasks
 
-use crate::hw::traits::UsbCdc;
+use crate::usb::UsbCdc;
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
 use heapless::String;
 

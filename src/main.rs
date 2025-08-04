@@ -17,7 +17,7 @@ use embassy_executor::Spawner;
 use sensor_swarm::app::SensorApp;
 use sensor_swarm::hw::traits::{DeviceManagement, Led};
 use sensor_swarm::hw::BlackPillDevice;
-use sensor_swarm::hw::blackpill_f401::usb::UsbCdcWrapper;
+use sensor_swarm::usb::UsbCdcWrapper;
 use sensor_swarm::terminal::create_shared_terminal;
 use sensor_swarm::commands::run_command_handler;
 
@@ -71,17 +71,8 @@ async fn main(spawner: Spawner) -> ! {
     embassy_time::Timer::after_millis(200).await;
     embassy_time::Timer::after_millis(1000).await;
 
-    // Split USB wrapper to get USB device and CDC class
-    let (usb_device, cdc_class) = usb_wrapper.split();
-
-    // Create UsbCdcWrapper from CDC class
-    let usb_cdc_wrapper = UsbCdcWrapper::new(cdc_class);
-
-    // Create shared terminal using the UsbCdcWrapper
-    let shared_terminal = create_shared_terminal(usb_cdc_wrapper);
-
-    // Spawn USB device task
-    spawner.spawn(usb_device_task(usb_device)).unwrap();
+    // Create shared terminal using the UsbCdcWrapper directly
+    let shared_terminal = create_shared_terminal(usb_wrapper);
 
     // Spawn command handler task using the new Terminal-based approach
     spawner.spawn(command_handler_task(shared_terminal)).unwrap();
@@ -93,19 +84,6 @@ async fn main(spawner: Spawner) -> ! {
     app.run().await;
 }
 
-#[embassy_executor::task]
-async fn usb_device_task(
-    mut usb_device: embassy_usb::UsbDevice<
-        'static,
-        embassy_stm32::usb_otg::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>,
-    >,
-) {
-    info!("Starting USB device task - running continuously for proper enumeration");
-
-    // Run the USB device state machine continuously
-    // This is critical for USB enumeration - it must not be interrupted with delays
-    usb_device.run().await;
-}
 
 #[embassy_executor::task]
 async fn command_handler_task(terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>) {

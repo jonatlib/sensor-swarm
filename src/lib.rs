@@ -16,6 +16,8 @@ pub mod sensors;
 #[cfg(feature = "embedded")]
 pub mod terminal;
 #[cfg(feature = "embedded")]
+pub mod usb;
+#[cfg(feature = "embedded")]
 pub mod usb_commands;
 
 #[cfg(test)]

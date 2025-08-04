@@ -3,7 +3,7 @@
 /// Commands are read from terminal, parsed when ENTER is detected, and responses sent back
 
 use crate::terminal::SharedTerminal;
-use crate::hw::traits::UsbCdc;
+use crate::usb::UsbCdc;
 use heapless::{String, Vec};
 
 /// Command buffer size for incoming commands
