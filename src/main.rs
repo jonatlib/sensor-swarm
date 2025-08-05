@@ -23,84 +23,135 @@ use sensor_swarm::usb::UsbCdcWrapper;
 use sensor_swarm::terminal::create_shared_terminal;
 use sensor_swarm::commands::run_command_handler;
 
+/// Initialize device manager and embassy framework
+/// 
+/// Returns the initialized device manager and embassy peripherals
+fn init_device_and_embassy() -> (BlackPillDevice, embassy_stm32::Peripherals) {
+    info!("Initializing device and embassy framework");
+    
+    let mut device_manager = BlackPillDevice::new();
+    let embassy_config = device_manager.init().expect("Device initialization failed");
+    let p = embassy_stm32::init(embassy_config);
+    
+    (device_manager, p)
+}
+
+/// Initialize RTC, backup domain and execute boot tasks
+/// 
+/// Returns the backup domain and remaining peripherals after RTC initialization
+fn init_rtc_and_boot_tasks(
+    device_manager: &mut BlackPillDevice,
+    peripherals: embassy_stm32::Peripherals,
+) -> embassy_stm32::Peripherals {
+    info!("Initializing RTC and processing boot tasks");
+    
+    let (backup_registers, remaining_peripherals) = device_manager
+        .init_rtc(peripherals)
+        .expect("RTC initialization failed");
+    
+    let mut backup_domain = BackupDomain::new(backup_registers);
+    let boot_task = backup_domain.boot_task().read_and_clear();
+    info!("Boot task consumed: {:?}", boot_task);
+    
+    execute_boot_task(boot_task);
+    
+    remaining_peripherals
+}
+
+/// Blink LED to indicate initialization step completion
+async fn blink_led_init_complete(led: &mut impl Led) {
+    led.on();
+    embassy_time::Timer::after_millis(200).await;
+    led.off();
+    embassy_time::Timer::after_millis(200).await;
+    led.on();
+    embassy_time::Timer::after_millis(1000).await;
+    led.off();
+    embassy_time::Timer::after_millis(1000).await;
+}
+
+/// Blink LED to indicate all initialization is complete
+async fn blink_led_all_complete(led: &mut impl Led) {
+    for _ in 0..3 {
+        led.on();
+        embassy_time::Timer::after_millis(200).await;
+        led.off();
+        embassy_time::Timer::after_millis(200).await;
+    }
+    embassy_time::Timer::after_millis(1000).await;
+}
+
+/// Initialize LED and provide early status indication
+async fn init_led_with_status(
+    device_manager: &mut BlackPillDevice,
+    peripherals: embassy_stm32::Peripherals,
+) -> (impl Led, embassy_stm32::Peripherals) {
+    info!("Initializing LED for status indication");
+    
+    let (mut led, remaining_peripherals) = device_manager
+        .init_led(peripherals)
+        .expect("LED initialization failed");
+
+    blink_led_init_complete(&mut led).await;
+    
+    (led, remaining_peripherals)
+}
+
+/// Initialize USB and create terminal interface
+async fn init_usb_and_terminal(
+    device_manager: &mut BlackPillDevice,
+    peripherals: embassy_stm32::Peripherals,
+) -> (sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>, embassy_stm32::Peripherals) {
+    info!("Initializing USB and terminal interface");
+    
+    let (usb_wrapper, remaining_peripherals) = device_manager
+        .init_usb(peripherals)
+        .await
+        .expect("USB initialization failed");
+
+    info!("Hardware peripherals initialized successfully");
+    
+    let shared_terminal = create_shared_terminal(usb_wrapper);
+    
+    (shared_terminal, remaining_peripherals)
+}
+
+/// Start the command handler task
+fn start_command_handler(
+    spawner: &Spawner,
+    terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>,
+) {
+    info!("Starting command handler task");
+    
+    let command_device_manager = BlackPillDevice::new();
+    spawner.spawn(command_handler_task(terminal, command_device_manager)).unwrap();
+}
+
 #[cfg(not(test))]
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
     info!("Starting sensor swarm application");
 
-    // Initialize device manager
-    let mut device_manager = BlackPillDevice::new();
-
-    // Get the device-specific configuration for embassy initialization
-    let embassy_config = device_manager.init().expect("Device initialization failed");
-    let p = embassy_stm32::init(embassy_config);
-
-    // Initialize RTC and backup domain for boot task management FIRST (right after clock init)
-    let (backup_registers, remaining_peripherals) = device_manager
-        .init_rtc(p)
-        .expect("RTC initialization failed");
+    // Initialize device and embassy framework
+    let (mut device_manager, peripherals) = init_device_and_embassy();
     
-    // Create backup domain for boot task management
-    let mut backup_domain = BackupDomain::new(backup_registers);
+    // Initialize RTC and process boot tasks
+    let peripherals = init_rtc_and_boot_tasks(&mut device_manager, peripherals);
     
-    // Check for pending boot tasks and read them, then execute immediately
-    let boot_task = backup_domain.boot_task().read_and_clear();
-    info!("Boot task consumed: {:?}", boot_task);
+    // Initialize LED with status indication
+    let (mut led, peripherals) = init_led_with_status(&mut device_manager, peripherals).await;
     
-    // Execute the boot task directly (not as a spawned task)
-    execute_boot_task(boot_task);
-
-    // Initialize LED first for early debugging (hardware-agnostic)
-    let (mut led, remaining_peripherals) = device_manager
-        .init_led(remaining_peripherals)
-        .expect("LED initialization failed");
-
-    // Blink LED once to indicate LED initialization complete
-    led.on();
-    embassy_time::Timer::after_millis(200).await;
-    led.off();
-    embassy_time::Timer::after_millis(200).await;
-    led.on();
-    embassy_time::Timer::after_millis(1000).await;
-    led.off();
-    embassy_time::Timer::after_millis(1000).await;
-
-    // Initialize USB using hardware abstraction
-    let (usb_wrapper, remaining_peripherals) = device_manager
-        .init_usb(remaining_peripherals)
-        .await
-        .expect("USB initialization failed");
-
-    info!("Hardware peripherals initialized successfully");
-
-    // Blink LED again to indicate all initialization complete
-    led.on();
-    embassy_time::Timer::after_millis(200).await;
-    led.off();
-    embassy_time::Timer::after_millis(200).await;
-    led.on();
-    embassy_time::Timer::after_millis(200).await;
-    led.off();
-    embassy_time::Timer::after_millis(200).await;
-    led.on();
-    embassy_time::Timer::after_millis(200).await;
-    led.off();
-    embassy_time::Timer::after_millis(200).await;
-    embassy_time::Timer::after_millis(1000).await;
-
-    // Create shared terminal using the UsbCdcWrapper directly
-    let shared_terminal = create_shared_terminal(usb_wrapper);
-
-    // Create a separate device manager instance for the command handler
-    let command_device_manager = BlackPillDevice::new();
+    // Initialize USB and terminal
+    let (terminal, _remaining_peripherals) = init_usb_and_terminal(&mut device_manager, peripherals).await;
     
-    // Spawn command handler task using the new Terminal-based approach
-    spawner.spawn(command_handler_task(shared_terminal, command_device_manager)).unwrap();
-
-    // Create the hardware-agnostic sensor application
+    // Final status indication
+    blink_led_all_complete(&mut led).await;
+    
+    // Start command handler
+    start_command_handler(&spawner, terminal);
+    
+    // Create and run the main application
     let mut app = SensorApp::new(led, device_manager);
-
-    // Run the main application logic (hardware-agnostic)
     app.run().await;
 }
 
