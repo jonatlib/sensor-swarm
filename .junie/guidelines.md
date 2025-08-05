@@ -50,6 +50,11 @@ We will implement STM32 blackpill based firmware but also PiPico2 HW which can b
 The device should be debuggable over serial over USB.
 
 
+# LLM guidelines
+
+If the project can't be compiled use `cargo check` to verify what are the compilation errors.
+
+
 # Memory Usage Guidelines
 
 You should use memory tools thoughtfully to enhance conversation continuity and context retention:
