@@ -2,7 +2,7 @@
 /// This module provides USB CDC communication functionality that is independent of specific hardware implementations
 /// The UsbManager for hardware-specific initialization remains in the hw module
 
-use embassy_stm32::usb_otg::Driver;
+use embassy_stm32::usb::Driver;
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 
 /// Trait for hardware-dependent USB CDC serial communication

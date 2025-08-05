@@ -1,7 +1,7 @@
 use crate::usb_log;
 /// Enhanced GPIO implementation for STM32F401 Black Pill
 /// Provides hardware-specific GPIO initialization functions that return Embassy GPIO types
-use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pin, Pull, Speed};
+use embassy_stm32::gpio::{Input, Level, Output, Pin, Pull, Speed};
 
 /// GPIO initialization functions for STM32F401 Black Pill
 /// These functions return configured Embassy GPIO types directly
@@ -14,7 +14,7 @@ impl BlackPillGpioInit {
         pin: impl Pin + 'static,
         initial_level: Level,
         speed: Speed,
-    ) -> Output<'static, AnyPin> {
+    ) -> Output<'static> {
         usb_log!(
             info,
             "Initializing GPIO output pin with level: {:?}, speed: {:?}",
@@ -25,29 +25,29 @@ impl BlackPillGpioInit {
     }
 
     /// Create a new GPIO pin as output with default settings (low level, low speed)
-    pub fn init_output_default(pin: impl Pin + 'static) -> Output<'static, AnyPin> {
+    pub fn init_output_default(pin: impl Pin + 'static) -> Output<'static> {
         Self::init_output(pin, Level::Low, Speed::Low)
     }
 
     /// Create a new GPIO pin as input
     /// Returns Embassy Input type directly - no wrapper needed
-    pub fn init_input(pin: impl Pin + 'static, pull: Pull) -> Input<'static, AnyPin> {
+    pub fn init_input(pin: impl Pin + 'static, pull: Pull) -> Input<'static> {
         usb_log!(info, "Initializing GPIO input pin with pull: {:?}", pull);
         Input::new(pin.degrade(), pull)
     }
 
     /// Create a new GPIO pin as input with pull-up
-    pub fn init_input_pullup(pin: impl Pin + 'static) -> Input<'static, AnyPin> {
+    pub fn init_input_pullup(pin: impl Pin + 'static) -> Input<'static> {
         Self::init_input(pin, Pull::Up)
     }
 
     /// Create a new GPIO pin as input with pull-down
-    pub fn init_input_pulldown(pin: impl Pin + 'static) -> Input<'static, AnyPin> {
+    pub fn init_input_pulldown(pin: impl Pin + 'static) -> Input<'static> {
         Self::init_input(pin, Pull::Down)
     }
 
     /// Create a new GPIO pin as input with no pull resistor
-    pub fn init_input_floating(pin: impl Pin + 'static) -> Input<'static, AnyPin> {
+    pub fn init_input_floating(pin: impl Pin + 'static) -> Input<'static> {
         Self::init_input(pin, Pull::None)
     }
 }

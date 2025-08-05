@@ -1,16 +1,16 @@
 /// USB communication implementation for STM32F401 Black Pill
 /// Hardware-specific USB initialization and management
-use crate::usb::{UsbCdc, UsbCdcWrapper};
+use crate::usb::UsbCdcWrapper;
 use defmt::*;
 use embassy_stm32::bind_interrupts;
-use embassy_stm32::usb_otg::Driver;
+use embassy_stm32::usb::{Driver, Config as UsbConfig};
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 use embassy_usb::{Builder, Config, UsbDevice};
 use heapless::String;
 
 // Bind USB OTG FS interrupt
 bind_interrupts!(struct Irqs {
-    OTG_FS => embassy_stm32::usb_otg::InterruptHandler<embassy_stm32::peripherals::USB_OTG_FS>;
+    OTG_FS => embassy_stm32::usb::InterruptHandler<embassy_stm32::peripherals::USB_OTG_FS>;
 });
 
 /// USB Communication Manager for STM32F401 Black Pill
@@ -54,7 +54,7 @@ impl UsbManager {
         static mut MSOS_DESCRIPTOR: [u8; 256] = [0; 256];
 
         // Create USB OTG config with proper settings for STM32F401
-        let mut usb_config = embassy_stm32::usb_otg::Config::default();
+        let mut usb_config = UsbConfig::default();
         // Do not enable vbus_detection. This is a safe default that works in all boards.
         usb_config.vbus_detection = false;
 
@@ -82,7 +82,6 @@ impl UsbManager {
             unsafe { &mut CONFIG_DESCRIPTOR },
             unsafe { &mut BOS_DESCRIPTOR },
             unsafe { &mut CONTROL_BUF },
-            unsafe { &mut MSOS_DESCRIPTOR },
         );
 
         // Create CDC-ACM class with runtime state initialization

@@ -12,7 +12,7 @@ use embassy_stm32::timer::Channel;
 /// The built-in LED is connected to PC13 and is active low
 /// Note: PC13 doesn't support PWM, so this uses software PWM simulation
 pub struct BlackPillLed {
-    pin: Output<'static, PC13>,
+    pin: Output<'static>,
     brightness: u8,
     is_on: bool,
 }
