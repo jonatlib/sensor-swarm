@@ -16,7 +16,8 @@ Tests:
   - All in-line tests must be HW agnostic so we can run them in QEMU (this is how `cargo test` is configured), so only test code which don't need actuall HW.
   - We can also write HIL (HW in loop) test, but need to use feature flags for these.
   - We also write tests that actually call our code. Tests that does not touch anything outside of test module should be omitted. Also tests like `assert_eq!(20, 20);` are absolute useless.
-  - If you are not able to test the actual implementation, ignore those tests and maybe only comment that it is hard to test it. 
+  - If you are not able to test the actual implementation, ignore those tests and maybe only comment that it is hard to test it.
+  - We are using `defmt-test` crate for tests, as this is no-std environment.
 
 We are keeping modules small and separated by application/business logic into submodules:
   - One module should do a one thing
