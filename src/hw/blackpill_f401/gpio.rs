@@ -1,4 +1,4 @@
-use crate::usb_log;
+use defmt::info;
 /// Enhanced GPIO implementation for STM32F401 Black Pill
 /// Provides hardware-specific GPIO initialization functions that return Embassy GPIO types
 use embassy_stm32::gpio::{Input, Level, Output, Pin, Pull, Speed};
@@ -15,8 +15,7 @@ impl BlackPillGpioInit {
         initial_level: Level,
         speed: Speed,
     ) -> Output<'static> {
-        usb_log!(
-            info,
+        info!(
             "Initializing GPIO output pin with level: {:?}, speed: {:?}",
             initial_level,
             speed
@@ -32,7 +31,7 @@ impl BlackPillGpioInit {
     /// Create a new GPIO pin as input
     /// Returns Embassy Input type directly - no wrapper needed
     pub fn init_input(pin: impl Pin + 'static, pull: Pull) -> Input<'static> {
-        usb_log!(info, "Initializing GPIO input pin with pull: {:?}", pull);
+        info!( "Initializing GPIO input pin with pull: {:?}", pull);
         Input::new(pin.degrade(), pull)
     }
 
@@ -72,13 +71,13 @@ impl BlackPillGpioManager {
 
     /// Initialize the GPIO manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        usb_log!(info, "Initializing GPIO manager...");
+        info!( "Initializing GPIO manager...");
 
         // GPIO initialization is handled per-pin basis
         // This method can be used for any global GPIO setup if needed
 
         self.pins_initialized = true;
-        usb_log!(info, "GPIO manager initialized successfully");
+        info!( "GPIO manager initialized successfully");
         Ok(())
     }
 

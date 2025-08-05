@@ -1,7 +1,6 @@
 /// Hardware-agnostic EEPROM implementation using eeprom crate and linker symbols
 /// Provides persistent storage using dedicated flash sector for STM32F411CE
 use crate::hw::traits::FlashStorage;
-use crate::usb_log;
 use core::ops::Range;
 use defmt::*;
 use embassy_stm32::flash::{Blocking, Flash};
@@ -20,7 +19,7 @@ impl EepromStorage {
         let eeprom_range = get_eeprom_range();
         let sector_size = eeprom_range.end - eeprom_range.start;
 
-        usb_log!(info, "Initializing EEPROM storage...");
+        info!( "Initializing EEPROM storage...");
         usb_log!(
             info,
             "EEPROM range: 0x{:08X} - 0x{:08X} ({} KB)",
@@ -63,7 +62,7 @@ impl EepromStorage {
         let stored_magic = u32::from_le_bytes(magic_buffer);
 
         if stored_magic != EEPROM_MAGIC {
-            usb_log!(info, "Initializing EEPROM for first use...");
+            info!( "Initializing EEPROM for first use...");
 
             // Erase the EEPROM sector
             match self
@@ -71,7 +70,7 @@ impl EepromStorage {
                 .blocking_erase(self.eeprom_range.start, self.eeprom_range.end)
             {
                 Ok(_) => {
-                    usb_log!(info, "EEPROM sector erased successfully");
+                    info!( "EEPROM sector erased successfully");
                 }
                 Err(_) => {
                     error!("Failed to erase EEPROM sector");
@@ -86,7 +85,7 @@ impl EepromStorage {
                 .blocking_write(self.eeprom_range.start + MAGIC_OFFSET, &magic_bytes)
             {
                 Ok(_) => {
-                    usb_log!(info, "EEPROM magic written successfully");
+                    info!( "EEPROM magic written successfully");
                 }
                 Err(_) => {
                     error!("Failed to write EEPROM magic");
@@ -175,7 +174,7 @@ impl FlashStorage for EepromStorage {
             .blocking_erase(self.eeprom_range.start, self.eeprom_range.end)
         {
             Ok(_) => {
-                usb_log!(info, "EEPROM sector erased successfully");
+                info!( "EEPROM sector erased successfully");
                 Ok(())
             }
             Err(_) => {

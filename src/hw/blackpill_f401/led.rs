@@ -1,7 +1,6 @@
 /// PWM-based LED implementation for STM32F401 Black Pill
 /// Provides hardware-specific LED control with brightness support using PWM
 use crate::hw::traits::Led;
-use crate::usb_log;
 use defmt::*;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::peripherals::PC13;
@@ -82,7 +81,7 @@ impl Led for BlackPillLed {
             }
         }
 
-        usb_log!(info, "LED brightness set to: {}", brightness);
+        info!( "LED brightness set to: {}", brightness);
     }
 }
 
@@ -167,13 +166,13 @@ impl BlackPillLedManager {
 
     /// Initialize the LED manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        usb_log!(info, "Initializing LED manager...");
+        info!( "Initializing LED manager...");
 
         // LED initialization is handled per-LED basis
         // This method can be used for any global LED setup if needed
 
         self.initialized = true;
-        usb_log!(info, "LED manager initialized successfully");
+        info!( "LED manager initialized successfully");
         Ok(())
     }
 

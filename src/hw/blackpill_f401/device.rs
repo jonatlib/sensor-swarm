@@ -4,7 +4,7 @@ use crate::hw::blackpill_f401::usb::UsbManager;
 /// Device initialization and management for STM32F401 Black Pill
 /// Provides hardware-specific device setup and configuration
 use crate::hw::traits::{DeviceManagement, DeviceInfo, InitResult};
-use crate::usb_log;
+use defmt::{info, warn};
 use embassy_stm32::Config;
 
 /// Device manager for STM32F401 Black Pill
@@ -91,7 +91,7 @@ impl DeviceManagement for BlackPillDevice {
 
     /// Perform a soft reset of the device
     fn soft_reset(&self) -> ! {
-        usb_log!(info, "Performing soft reset...");
+        info!("Performing soft reset...");
         cortex_m::peripheral::SCB::sys_reset();
     }
 
@@ -125,7 +125,7 @@ impl DeviceManagement for BlackPillDevice {
         &mut self,
         peripherals: embassy_stm32::Peripherals,
     ) -> InitResult<Self::UsbWrapper> {
-        usb_log!(info, "Initializing BlackPill USB...");
+        info!("Initializing BlackPill USB...");
 
         // Extract USB peripherals using unsafe pointer operations
         let (usb_otg_fs, pa12, pa11, remaining_peripherals) = unsafe {
@@ -148,12 +148,12 @@ impl DeviceManagement for BlackPillDevice {
             .await
         {
             Ok(usb_wrapper) => {
-                usb_log!(info, "USB wrapper initialized successfully");
-                usb_log!(info, "BlackPill USB peripherals initialized successfully");
+                info!("USB wrapper initialized successfully");
+                info!( "BlackPill USB peripherals initialized successfully");
                 Ok((usb_wrapper, remaining_peripherals))
             }
             Err(e) => {
-                usb_log!(warn, "Failed to initialize USB wrapper: {}", e);
+                warn!( "Failed to initialize USB wrapper: {}", e);
                 Err("Failed to initialize USB wrapper")
             }
         }
@@ -163,13 +163,13 @@ impl DeviceManagement for BlackPillDevice {
     /// This method takes the peripherals struct and extracts what it needs for timer initialization
     /// Returns initialized timer instance and remaining peripherals
     fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer> {
-        usb_log!(info, "Initializing TIM2 peripheral for timer functionality");
+        info!( "Initializing TIM2 peripheral for timer functionality");
 
         // In a full implementation, this would extract the TIM2 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
 
-        usb_log!(warn, "Timer peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
+        warn!( "Timer peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
         Err("Timer peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
     }
 
@@ -177,13 +177,13 @@ impl DeviceManagement for BlackPillDevice {
     /// This method takes the peripherals struct and extracts what it needs for SPI initialization
     /// Returns initialized SPI instance and remaining peripherals
     fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi> {
-        usb_log!(info, "Initializing SPI1 peripheral for SPI functionality");
+        info!( "Initializing SPI1 peripheral for SPI functionality");
 
         // In a full implementation, this would extract the SPI1 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
 
-        usb_log!(warn, "SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
+        warn!( "SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
         Err("SPI peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
     }
 
@@ -191,7 +191,7 @@ impl DeviceManagement for BlackPillDevice {
     /// This method takes the peripherals struct and extracts what it needs for RTC initialization
     /// Returns initialized backup registers instance and remaining peripherals
     fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters> {
-        usb_log!(info, "Initializing RTC peripheral for backup registers functionality");
+        info!( "Initializing RTC peripheral for backup registers functionality");
 
         // Extract RTC peripheral using unsafe pointer operations
         let (rtc_peripheral, remaining_peripherals) = unsafe {
@@ -213,21 +213,21 @@ impl DeviceManagement for BlackPillDevice {
         // Create backup registers wrapper
         let backup_registers = BlackPillBackupRegisters::new(rtc);
 
-        usb_log!(info, "RTC and backup registers initialized successfully");
+        info!( "RTC and backup registers initialized successfully");
         Ok((backup_registers, remaining_peripherals))
     }
 
     /// Reboot the device normally
     /// This performs a standard system reset
     fn reboot(&self) -> ! {
-        usb_log!(info, "Performing normal system reboot...");
+        info!( "Performing normal system reboot...");
         self.soft_reset()
     }
 
     /// Disable all interrupts to prevent interference during DFU transition
     /// This should disable both cortex-m interrupts and any hardware-specific interrupts
     fn disable_interrupts(&self) {
-        usb_log!(info, "Disabling interrupts...");
+        info!( "Disabling interrupts...");
         
         // Disable all interrupts using cortex-m
         cortex_m::interrupt::disable();
@@ -243,7 +243,7 @@ impl DeviceManagement for BlackPillDevice {
     /// De-initialize the RTC peripheral
     /// This should reset the RTC to its default state and disable RTC clocking
     fn deinitialize_rtc(&self) {
-        usb_log!(info, "De-initializing RTC...");
+        info!( "De-initializing RTC...");
         
         // For STM32F401, we need to access RTC registers to properly de-initialize
         // This is hardware-specific implementation for BlackPill F401
@@ -251,7 +251,7 @@ impl DeviceManagement for BlackPillDevice {
             // Access RTC registers through STM32F4xx peripheral access
             // Note: This is a simplified implementation - in a full implementation
             // we would need to properly handle RTC domain protection and clocking
-            usb_log!(warn, "RTC de-initialization - basic implementation for STM32F401");
+            warn!( "RTC de-initialization - basic implementation for STM32F401");
             
             // TODO: Implement full RTC de-initialization:
             // - Disable RTC interrupts
@@ -263,7 +263,7 @@ impl DeviceManagement for BlackPillDevice {
     /// De-initialize system clocks and prescalers
     /// This should reset the clock configuration to default state
     fn deinitialize_clocks(&self) {
-        usb_log!(info, "De-initializing clocks and prescalers...");
+        info!( "De-initializing clocks and prescalers...");
         
         // For STM32F401, reset clock configuration to default HSI state
         // This is hardware-specific implementation for BlackPill F401
@@ -271,7 +271,7 @@ impl DeviceManagement for BlackPillDevice {
             // Access RCC (Reset and Clock Control) registers
             // Note: This is a simplified implementation - in a full implementation
             // we would need to properly sequence the clock changes
-            usb_log!(warn, "Clock de-initialization - basic implementation for STM32F401");
+            warn!( "Clock de-initialization - basic implementation for STM32F401");
             
             // TODO: Implement full clock de-initialization:
             // - Reset PLL configuration
@@ -284,7 +284,7 @@ impl DeviceManagement for BlackPillDevice {
     /// Clear any pending interrupts
     /// This should clear all pending interrupts in the NVIC and other interrupt controllers
     fn clear_pending_interrupts(&self) {
-        usb_log!(info, "Clearing pending interrupts...");
+        info!( "Clearing pending interrupts...");
         
         unsafe {
             // Clear all pending interrupts in NVIC
@@ -302,7 +302,7 @@ impl DeviceManagement for BlackPillDevice {
     /// This transfers control directly to the STM32 system DFU bootloader
     /// Note: This function will not return as it transfers control to the bootloader
     fn jump_to_dfu_bootloader(&self) -> ! {
-        usb_log!(info, "Jumping to DFU bootloader...");
+        info!( "Jumping to DFU bootloader...");
 
         // For STM32F401, jump directly to the system DFU bootloader
         unsafe {
@@ -313,8 +313,8 @@ impl DeviceManagement for BlackPillDevice {
             let stack_ptr = core::ptr::read_volatile(bootloader_addr as *const u32);
             let reset_vector = core::ptr::read_volatile((bootloader_addr + 4) as *const u32);
 
-            usb_log!(info, "Bootloader stack pointer: 0x{:08X}", stack_ptr);
-            usb_log!(info, "Bootloader entry point: 0x{:08X}", reset_vector);
+            info!( "Bootloader stack pointer: 0x{:08X}", stack_ptr);
+            info!( "Bootloader entry point: 0x{:08X}", reset_vector);
 
             // Set stack pointer
             cortex_m::register::msp::write(stack_ptr);
