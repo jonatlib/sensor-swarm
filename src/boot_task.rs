@@ -4,6 +4,7 @@
 
 use defmt::info;
 use crate::hw::BootTask;
+use crate::dfu_reboot;
 
 /// Execute a boot task based on the provided BootTask enum value.
 /// This function handles the different types of boot tasks that can be requested
@@ -42,6 +43,12 @@ pub fn execute_boot_task(boot_task: BootTask) {
             // In a real implementation, this would run comprehensive self-tests
             // For now, we just log the action
             info!("Self-test task completed (stub implementation)");
+        }
+        BootTask::DFUReboot => {
+            info!("Executing DFU REBOOT task...");
+            // This will de-initialize the system and jump to DFU mode
+            // This function will not return
+            dfu_reboot::enter_dfu_mode();
         }
     }
     

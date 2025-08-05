@@ -11,6 +11,8 @@ pub mod boot_task;
 #[cfg(feature = "embedded")]
 pub mod commands;
 #[cfg(feature = "embedded")]
+pub mod dfu_reboot;
+#[cfg(feature = "embedded")]
 pub mod hw;
 #[cfg(feature = "embedded")]
 pub mod logging;
@@ -108,6 +110,7 @@ mod tests {
         defmt::assert!(BootTask::from(0) == BootTask::None);
         defmt::assert!(BootTask::from(1) == BootTask::UpdateFirmware);
         defmt::assert!(BootTask::from(2) == BootTask::RunSelfTest);
+        defmt::assert!(BootTask::from(3) == BootTask::DFUReboot);
         defmt::assert!(BootTask::from(999) == BootTask::None); // Unknown values default to None
     }
 
@@ -118,6 +121,7 @@ mod tests {
         defmt::assert!(BootTask::None as u32 == 0);
         defmt::assert!(BootTask::UpdateFirmware as u32 == 1);
         defmt::assert!(BootTask::RunSelfTest as u32 == 2);
+        defmt::assert!(BootTask::DFUReboot as u32 == 3);
     }
 
     #[cfg(feature = "embedded")]
@@ -154,6 +158,10 @@ mod tests {
         crate::boot_task::execute_boot_task(BootTask::RunSelfTest);
         // Test passes if no panic occurs
     }
+
+    // Note: We cannot test execute_boot_task(BootTask::DFUReboot) because
+    // it calls enter_dfu_mode() which never returns and would reset the system.
+    // This functionality must be tested on actual hardware.
 }
 
 #[cfg(feature = "defmt-test")]
