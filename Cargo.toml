@@ -17,6 +17,10 @@ test = false
 name = "integration"
 harness = false
 
+[[test]]
+name = "parser"
+harness = false
+
 
 [features]
 default = ["blackpill-f401", "embedded", "defmt-test"]
