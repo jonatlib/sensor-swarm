@@ -87,6 +87,13 @@ impl Led for BlackPillLed {
 
 /// PWM-capable LED implementation for external LEDs (Stub Implementation)
 /// This is a stub implementation since PWM functionality is complex in embassy-stm32 0.1.0
+/// TODO: Implement complete PWM LED functionality for production use
+/// - Replace PhantomData with actual timer peripheral
+/// - Implement proper PWM channel configuration
+/// - Add GPIO pin configuration for PWM output
+/// - Implement actual duty cycle control
+/// - Add frequency configuration support
+/// - Add error handling for PWM initialization failures
 pub struct BlackPillPwmLed<T> {
     _timer: core::marker::PhantomData<T>,
     brightness: u8,
@@ -95,6 +102,11 @@ pub struct BlackPillPwmLed<T> {
 impl<T> BlackPillPwmLed<T> {
     /// Create a new PWM LED instance (stub implementation)
     /// Note: PWM functionality is not available - this is a stub implementation
+    /// TODO: Replace stub implementation with actual PWM initialization
+    /// - Configure timer peripheral for PWM mode
+    /// - Set up GPIO pin for PWM output with proper alternate function
+    /// - Configure PWM frequency and resolution
+    /// - Initialize PWM channel with proper settings
     pub fn new(
         _timer: T,
         _pin: (), // Placeholder
@@ -120,6 +132,10 @@ impl<T> BlackPillPwmLed<T> {
     }
 
     /// Set duty cycle directly (stub implementation)
+    /// TODO: Implement actual PWM duty cycle control
+    /// - Set actual PWM duty cycle on hardware timer
+    /// - Handle duty cycle range validation
+    /// - Add error handling for invalid duty values
     pub fn set_duty(&mut self, duty: u16) {
         // Convert duty to brightness for stub implementation
         self.brightness = (duty.min(255)) as u8;
@@ -127,6 +143,7 @@ impl<T> BlackPillPwmLed<T> {
     }
 }
 
+/// TODO: Replace all stub implementations with actual PWM hardware control
 impl<T> Led for BlackPillPwmLed<T> {
     fn on(&mut self) {
         self.set_brightness(255);
@@ -146,6 +163,7 @@ impl<T> Led for BlackPillPwmLed<T> {
 
     fn set_brightness(&mut self, brightness: u8) {
         self.brightness = brightness;
+        // TODO: Convert brightness to actual PWM duty cycle and apply to hardware
         debug!(
             "PWM LED brightness set to: {} (stub implementation)",
             brightness

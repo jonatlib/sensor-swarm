@@ -1,5 +1,11 @@
 // Radio communication traits
 // This module defines generic, hardware-agnostic traits for radio communication
+// TODO: Implement concrete radio hardware drivers for 433MHz OOK communication
+// - Create implementation for specific 433MHz radio modules (e.g., RFM69, CC1101)
+// - Implement Manchester coding/decoding as per project requirements
+// - Add Reed-Solomon error correction integration
+// - Implement packet acknowledgment system
+// - Add network topology and routing functionality
 
 use super::protocol::Packet;
 use defmt::Format;

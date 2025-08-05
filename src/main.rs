@@ -123,6 +123,8 @@ fn start_command_handler(
 ) {
     info!("Starting command handler task");
     
+    // TODO: Consider sharing the device manager instance instead of creating a new one
+    // This could lead to resource conflicts or inefficient resource usage
     let command_device_manager = BlackPillDevice::new();
     spawner.spawn(command_handler_task(terminal, command_device_manager)).unwrap();
 }

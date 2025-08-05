@@ -42,8 +42,24 @@ where
             "Application started - logs will appear on both RTT and USB serial"
         );
 
+        // TODO: Initialize and configure sensors (temperature, humidity, etc.)
+        // TODO: Initialize radio communication module for 433MHz OOK with Manchester coding
+        // TODO: Implement Reed-Solomon error correction for radio packets
+        // TODO: Set up packet acknowledgment system
+        // TODO: Implement sensor data collection and transmission scheduling
+        // TODO: Add network discovery and neighbor management
+        // TODO: Implement power management and sleep modes for battery operation
+        // TODO: Add watchdog timer configuration for production reliability
+
         let mut counter = 0;
         loop {
+            // TODO: Replace simple heartbeat with actual sensor swarm functionality:
+            // - Read sensor data periodically
+            // - Transmit sensor data to network
+            // - Listen for incoming radio packets
+            // - Process received commands and data
+            // - Manage network topology and routing
+            
             // Heartbeat pattern using hardware-agnostic LED trait
             self.led.on();
             Timer::after_millis(100).await;
@@ -55,6 +71,7 @@ where
             // Use hardware-agnostic logging
             terminal_log!(info, "Heartbeat #{}", counter);
 
+            // TODO: Remove or make configurable for production - DFU reboot testing
             // Optional: Reboot to DFU bootloader after 10 seconds (10 heartbeats)
             // if counter >= 10 {
             //     terminal_log!(warn, "Testing DFU bootloader reboot in 2 seconds...");

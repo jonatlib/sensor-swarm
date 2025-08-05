@@ -103,6 +103,9 @@ impl DeviceManagement for BlackPillDevice {
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
     /// Returns initialized LED instance and remaining peripherals
     fn init_led(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Led> {
+        // TODO: Replace unsafe pointer operations with safe peripheral extraction
+        // This unsafe code is a workaround and not suitable for production
+        // Consider using embassy's peripheral splitting or a proper HAL abstraction
         // Extract PC13 for LED initialization using unsafe pointer operations
         // This is necessary because Rust's ownership system doesn't allow partial moves
         // from structs while returning the remaining struct
@@ -110,6 +113,7 @@ impl DeviceManagement for BlackPillDevice {
             let mut p = core::mem::ManuallyDrop::new(peripherals);
             let pc13 = core::ptr::read(&p.PC13);
 
+            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
             // Reconstruct peripherals without PC13 by creating a new instance
             // Note: This is a workaround - in a real implementation, we'd need
             // a proper way to handle partial peripheral extraction
@@ -131,6 +135,8 @@ impl DeviceManagement for BlackPillDevice {
     ) -> InitResult<Self::UsbWrapper> {
         info!("Initializing BlackPill USB...");
 
+        // TODO: Replace unsafe pointer operations with safe peripheral extraction
+        // This unsafe code is a workaround and not suitable for production
         // Extract USB peripherals using unsafe pointer operations
         let (usb_otg_fs, pa12, pa11, remaining_peripherals) = unsafe {
             let mut p = core::mem::ManuallyDrop::new(peripherals);
@@ -138,6 +144,7 @@ impl DeviceManagement for BlackPillDevice {
             let pa12 = core::ptr::read(&p.PA12);
             let pa11 = core::ptr::read(&p.PA11);
 
+            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
             // Reconstruct peripherals without the extracted ones
             let remaining = core::ptr::read(&*p);
             (usb_otg_fs, pa12, pa11, remaining)
@@ -169,6 +176,12 @@ impl DeviceManagement for BlackPillDevice {
     fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer> {
         info!( "Initializing TIM2 peripheral for timer functionality");
 
+        // TODO: Implement complete timer initialization for production use
+        // This function is currently a stub and needs full implementation including:
+        // - Safe peripheral extraction from embassy_stm32::Peripherals
+        // - Timer configuration (prescaler, period, mode)
+        // - Clock source configuration
+        // - Interrupt setup if needed
         // In a full implementation, this would extract the TIM2 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
@@ -183,6 +196,13 @@ impl DeviceManagement for BlackPillDevice {
     fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi> {
         info!( "Initializing SPI1 peripheral for SPI functionality");
 
+        // TODO: Implement complete SPI initialization for production use
+        // This function is currently a stub and needs full implementation including:
+        // - Safe peripheral extraction from embassy_stm32::Peripherals
+        // - SPI configuration (mode, frequency, data size, bit order)
+        // - GPIO pin configuration for MOSI, MISO, SCK, and CS pins
+        // - DMA setup if required for high-performance transfers
+        // - Error handling and timeout configuration
         // In a full implementation, this would extract the SPI1 peripheral from embassy_stm32::init()
         // and configure it appropriately. For now, we return an error since we can't create
         // peripheral instances without the actual hardware initialization.
@@ -197,11 +217,14 @@ impl DeviceManagement for BlackPillDevice {
     fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters> {
         info!( "Initializing RTC peripheral for backup registers functionality");
 
+        // TODO: Replace unsafe pointer operations with safe peripheral extraction
+        // This unsafe code is a workaround and not suitable for production
         // Extract RTC peripheral using unsafe pointer operations
         let (rtc_peripheral, remaining_peripherals) = unsafe {
             let mut p = core::mem::ManuallyDrop::new(peripherals);
             let rtc_peripheral = core::ptr::read(&p.RTC);
 
+            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
             // Reconstruct peripherals without the extracted RTC
             let remaining = core::ptr::read(&*p);
             (rtc_peripheral, remaining)
@@ -236,6 +259,8 @@ impl DeviceManagement for BlackPillDevice {
         // Disable all interrupts using cortex-m
         cortex_m::interrupt::disable();
         
+        // TODO: Add comprehensive interrupt disabling for production safety
+        // Consider disabling all peripheral interrupts, not just SysTick
         // Additional STM32-specific interrupt disabling if needed
         unsafe {
             // Disable systick
@@ -271,6 +296,8 @@ impl DeviceManagement for BlackPillDevice {
         
         // For STM32F401, reset clock configuration to default HSI state
         // This is hardware-specific implementation for BlackPill F401
+        // TODO: Replace unsafe register access with safe HAL abstractions
+        // This unsafe code should be replaced with proper embassy-stm32 APIs
         unsafe {
             // Access RCC (Reset and Clock Control) registers
             // Note: This is a simplified implementation - in a full implementation
@@ -282,6 +309,7 @@ impl DeviceManagement for BlackPillDevice {
             // - Switch to HSI (internal oscillator)
             // - Reset prescalers to default values
             // - Disable external oscillators if used
+            // - Add proper error handling and timeout checks
         }
     }
 
@@ -315,11 +343,17 @@ impl DeviceManagement for BlackPillDevice {
     fn jump_to_dfu_bootloader(&self) -> ! {
         info!( "Jumping to DFU bootloader...");
 
+        // TODO: Add production safety checks for DFU bootloader jump
+        // - Validate bootloader address and vectors before jumping
+        // - Add timeout for bootloader detection
+        // - Implement fallback mechanism if bootloader is corrupted
+        // - Consider adding signature verification for security
         // For STM32F401, jump directly to the system DFU bootloader
         unsafe {
             // STM32F401 system memory (bootloader) starts at 0x1FFF0000
             let bootloader_addr = 0x1FFF0000u32;
 
+            // TODO: Add validation of bootloader presence and integrity
             // Read the stack pointer and reset vector from bootloader
             let stack_ptr = core::ptr::read_volatile(bootloader_addr as *const u32);
             let reset_vector = core::ptr::read_volatile((bootloader_addr + 4) as *const u32);
@@ -327,6 +361,7 @@ impl DeviceManagement for BlackPillDevice {
             info!( "Bootloader stack pointer: 0x{:08X}", stack_ptr);
             info!( "Bootloader entry point: 0x{:08X}", reset_vector);
 
+            // TODO: Validate stack pointer and reset vector values before using them
             // Set stack pointer
             cortex_m::register::msp::write(stack_ptr);
 

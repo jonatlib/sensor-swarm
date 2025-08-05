@@ -163,9 +163,10 @@ mod tests {
         // Test passes if no panic occurs
     }
 
+    // TODO: Implement hardware-in-the-loop (HIL) testing for DFU reboot functionality
     // Note: We cannot test execute_boot_task(BootTask::DFUReboot) because
     // it calls enter_dfu_mode() which never returns and would reset the system.
-    // This functionality must be tested on actual hardware.
+    // This functionality must be tested on actual hardware with proper test infrastructure.
 }
 
 #[cfg(feature = "defmt-test")]

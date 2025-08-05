@@ -45,6 +45,8 @@ impl UsbManager {
     ) -> Result<UsbCdcWrapper, &'static str> {
         info!("Initializing USB CDC-ACM serial interface...");
 
+        // TODO: Consider safer buffer management for production
+        // These static mutable buffers could be replaced with safer alternatives
         // Required buffers for USB driver and device
         static mut EP_OUT_BUFFER: [u8; 256] = [0; 256];
         static mut DEVICE_DESCRIPTOR: [u8; 256] = [0; 256];
@@ -61,6 +63,10 @@ impl UsbManager {
         // Create the USB driver
         let driver = Driver::new_fs(usb, Irqs, dp, dm, unsafe { &mut EP_OUT_BUFFER }, usb_config);
 
+        // TODO: Replace hardcoded USB device configuration with production values
+        // - Use proper VID/PID registered for the product
+        // - Set appropriate manufacturer, product name, and serial number
+        // - Make configuration configurable or read from device-specific storage
         // Create USB device configuration - using working example VID/PID
         let mut config = Config::new(0xc0de, 0xcafe);
         config.manufacturer = Some("Embassy");
@@ -84,6 +90,8 @@ impl UsbManager {
             unsafe { &mut CONTROL_BUF },
         );
 
+        // TODO: Consider safer state management for production
+        // This unsafe static initialization could be replaced with safer alternatives
         // Create CDC-ACM class with runtime state initialization
         use embassy_usb::class::cdc_acm::State;
         static mut STATE: Option<State> = None;

@@ -101,9 +101,13 @@ impl Packet {
     }
 
     /// Convert packet to byte array for transmission
+    /// TODO: Add Reed-Solomon error correction encoding as per project requirements
+    /// TODO: Add packet integrity checks (CRC/checksum) for production reliability
     pub fn to_bytes(&self) -> [u8; PACKET_SIZE_BYTES] {
         let mut bytes = [0u8; PACKET_SIZE_BYTES];
 
+        // TODO: Replace unsafe pointer operations with safe serialization
+        // This unsafe code should be replaced with safer alternatives for production
         // Serialize header
         let header_bytes = unsafe {
             core::slice::from_raw_parts(
@@ -120,9 +124,14 @@ impl Packet {
     }
 
     /// Create packet from byte array received from radio
+    /// TODO: Add Reed-Solomon error correction decoding as per project requirements
+    /// TODO: Add packet validation and integrity checks for production reliability
+    /// TODO: Add error handling for malformed or corrupted packets
     pub fn from_bytes(bytes: &[u8; PACKET_SIZE_BYTES]) -> Self {
         let header_size = core::mem::size_of::<Header>();
 
+        // TODO: Replace unsafe unaligned read with safe deserialization
+        // This unsafe code should be replaced with safer alternatives for production
         // Deserialize header
         let header = unsafe { core::ptr::read_unaligned(bytes.as_ptr() as *const Header) };
 

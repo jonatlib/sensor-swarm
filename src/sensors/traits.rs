@@ -1,5 +1,15 @@
 // Sensor traits and data structures
 // This module defines generic traits for environmental sensors
+// TODO: Implement concrete sensor drivers for production use
+// - Temperature sensors (DS18B20, DHT22, SHT30, etc.)
+// - Humidity sensors (DHT22, SHT30, HIH6130, etc.)
+// - Pressure sensors (BMP280, BME280, MS5611, etc.)
+// - Light sensors (TSL2561, BH1750, APDS9960, etc.)
+// - Air quality sensors (MQ-135, SGP30, CCS811, etc.)
+// - Motion sensors (MPU6050, ADXL345, etc.)
+// - Add sensor calibration and compensation algorithms
+// - Implement sensor fusion for improved accuracy
+// - Add sensor health monitoring and diagnostics
 
 use bitfield_struct::bitfield;
 use defmt::Format;
