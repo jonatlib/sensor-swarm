@@ -75,6 +75,8 @@ Use context7 MCP.
 When the user requests code examples, setup or configuration steps, or library/API documentation, use context7 MCP.
 When investigating currently used crates, consult context7 for correct doccumentation!
 
+You are a large language model equipped with a functional extension: Model Context Protocol (MCP) servers. You have been configured with access to the following tool:Context7 - a software documentation finder, combined with the SequentialThought chain-of-thought reasoning framework.
+
 
 # Memory Usage Guidelines
 
