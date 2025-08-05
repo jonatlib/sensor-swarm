@@ -10,7 +10,8 @@ pub mod usb_defmt_logger;
 
 // Re-export commonly used types
 pub use backup_registers::BlackPillBackupRegisters;
-pub use device::{BlackPillDevice, DeviceInfo};
+pub use device::BlackPillDevice;
+pub use crate::hw::traits::DeviceInfo;
 pub use flash::{get_eeprom_range, EepromStorage};
 pub use gpio::{BlackPillGpioInit, BlackPillGpioManager, GpioPinInfo};
 pub use led::{BlackPillLed, BlackPillLedManager, BlackPillPwmLed, LedInfo};

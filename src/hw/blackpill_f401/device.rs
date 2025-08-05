@@ -3,7 +3,7 @@ use crate::hw::blackpill_f401::led::BlackPillLed;
 use crate::hw::blackpill_f401::usb::UsbManager;
 /// Device initialization and management for STM32F401 Black Pill
 /// Provides hardware-specific device setup and configuration
-use crate::hw::traits::{DeviceManagement, InitResult};
+use crate::hw::traits::{DeviceManagement, DeviceInfo, InitResult};
 use crate::usb_log;
 use embassy_stm32::Config;
 
@@ -19,10 +19,24 @@ impl BlackPillDevice {
         Self { initialized: false }
     }
 
+}
+
+impl DeviceManagement for BlackPillDevice {
+    /// Timer peripheral type - using TIM2 as default timer
+    type Timer = embassy_stm32::peripherals::TIM2;
+    /// SPI peripheral type - using SPI1 as default SPI
+    type Spi = embassy_stm32::peripherals::SPI1;
+    /// LED type - using BlackPillLed for PC13
+    type Led = BlackPillLed;
+    /// USB Wrapper type - using UsbCdcWrapper for USB communication
+    type UsbWrapper = crate::usb::UsbCdcWrapper;
+    /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
+    type BackupRegisters = BlackPillBackupRegisters;
+
     /// Initialize the device with proper clock configuration
     /// This sets up the system clocks, HSE oscillator, and PLL
     /// Based on working Embassy USB example configuration
-    pub fn init(&mut self) -> Result<Config, &'static str> {
+    fn init(&mut self) -> Result<embassy_stm32::Config, &'static str> {
         let mut config = Config::default();
         {
             use embassy_stm32::rcc::*;
@@ -59,12 +73,12 @@ impl BlackPillDevice {
     }
 
     /// Check if the device has been initialized
-    pub fn is_initialized(&self) -> bool {
+    fn is_initialized(&self) -> bool {
         self.initialized
     }
 
     /// Get device information
-    pub fn get_device_info(&self) -> DeviceInfo {
+    fn get_device_info(&self) -> DeviceInfo {
         DeviceInfo {
             model: "STM32F401CCU6",
             board: "Black Pill",
@@ -76,23 +90,10 @@ impl BlackPillDevice {
     }
 
     /// Perform a soft reset of the device
-    pub fn soft_reset(&self) -> ! {
+    fn soft_reset(&self) -> ! {
         usb_log!(info, "Performing soft reset...");
         cortex_m::peripheral::SCB::sys_reset();
     }
-}
-
-impl DeviceManagement for BlackPillDevice {
-    /// Timer peripheral type - using TIM2 as default timer
-    type Timer = embassy_stm32::peripherals::TIM2;
-    /// SPI peripheral type - using SPI1 as default SPI
-    type Spi = embassy_stm32::peripherals::SPI1;
-    /// LED type - using BlackPillLed for PC13
-    type Led = BlackPillLed;
-    /// USB Wrapper type - using UsbCdcWrapper for USB communication
-    type UsbWrapper = crate::usb::UsbCdcWrapper;
-    /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
-    type BackupRegisters = BlackPillBackupRegisters;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts PC13 for LED initialization
@@ -261,13 +262,3 @@ impl Default for BlackPillDevice {
     }
 }
 
-/// Device information structure
-#[derive(Debug, Clone)]
-pub struct DeviceInfo {
-    pub model: &'static str,
-    pub board: &'static str,
-    pub flash_size: u32,
-    pub ram_size: u32,
-    pub system_clock_hz: u32,
-    pub usb_clock_hz: u32,
-}

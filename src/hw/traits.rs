@@ -4,6 +4,18 @@
 /// Type alias for initialization results that return a component and remaining peripherals
 pub type InitResult<T> = Result<(T, embassy_stm32::Peripherals), &'static str>;
 
+/// Device information structure
+/// Contains hardware-specific information about the device
+#[derive(Debug, Clone)]
+pub struct DeviceInfo {
+    pub model: &'static str,
+    pub board: &'static str,
+    pub flash_size: u32,
+    pub ram_size: u32,
+    pub system_clock_hz: u32,
+    pub usb_clock_hz: u32,
+}
+
 /// Trait for abstracting debug interface setup
 /// Implementations should configure the appropriate logging backend (USB, RTT, etc.)
 pub trait DebugInterface {
@@ -25,6 +37,19 @@ pub trait DeviceManagement {
     type UsbWrapper;
     /// BackupRegisters type that will be returned by init_rtc
     type BackupRegisters: crate::hw::traits::BackupRegisters;
+
+    /// Initialize the device with proper clock configuration
+    /// This sets up the system clocks and returns the Embassy configuration
+    fn init(&mut self) -> Result<embassy_stm32::Config, &'static str>;
+
+    /// Check if the device has been initialized
+    fn is_initialized(&self) -> bool;
+
+    /// Get device information including model, board, memory sizes, and clock frequencies
+    fn get_device_info(&self) -> DeviceInfo;
+
+    /// Perform a soft reset of the device
+    fn soft_reset(&self) -> !;
 
     /// Initialize LED peripheral separately for early debugging
     /// This method takes the full peripherals struct and extracts what it needs for LED initialization
