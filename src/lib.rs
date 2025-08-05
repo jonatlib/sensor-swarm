@@ -11,8 +11,6 @@ pub mod boot_task;
 #[cfg(feature = "embedded")]
 pub mod commands;
 #[cfg(feature = "embedded")]
-pub mod dfu_reboot;
-#[cfg(feature = "embedded")]
 pub mod hw;
 #[cfg(feature = "embedded")]
 pub mod logging;

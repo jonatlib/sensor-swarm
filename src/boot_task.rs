@@ -2,9 +2,10 @@
 /// This module handles the execution of boot tasks that are stored in backup registers
 /// and need to be performed after a device reset.
 
+pub mod dfu_reboot;
+
 use defmt::info;
 use crate::hw::BootTask;
-use crate::dfu_reboot;
 
 /// Execute a boot task based on the provided BootTask enum value.
 /// This function handles the different types of boot tasks that can be requested
