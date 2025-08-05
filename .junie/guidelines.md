@@ -30,6 +30,15 @@ We are using Embassy framework.
 
 Distributed Testing with defmt-testFor testing individual modules (like parser, sensors, etc.) while using defmt-test, create separate test files in the tests/ directory instead of inline tests in source modules. Each test file becomes its own test binary, avoiding symbol conflicts. Create tests
 
+In main.rs use only defmt logging. In HW module and all its sub-modules use only defmt logging.
+In other part of the project which are HS agnostic use usb_logging.
+Also use correctly usb log level:
+  - Trace for every bit what is the app doing so we can read it as a story.
+  - Debug for more verbose logging which is still not suitable for production, but the app shuold not be affected by this.
+  - Info logs for what is the app doing which can be enabled in production, so it should not log for every little fucntion. And not too often.
+  - Warnings for recoverable conditions and issues.
+  - Errors for not handled or not recoverable conditions.
+
 
 ## Project structure
 
