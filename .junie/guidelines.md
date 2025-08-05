@@ -28,6 +28,9 @@ so if there is existing crate we rather use that instead of writing our own impl
 
 We are using Embassy framework.
 
+Distributed Testing with defmt-testFor testing individual modules (like parser, sensors, etc.) while using defmt-test, create separate test files in the tests/ directory instead of inline tests in source modules. Each test file becomes its own test binary, avoiding symbol conflicts. Create tests
+
+
 ## Project structure
 
 All HW dependent code should be under `hw` module under specific HW.
