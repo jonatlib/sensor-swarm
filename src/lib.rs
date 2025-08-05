@@ -134,8 +134,10 @@ mod tests {
     #[test]
     fn test_execute_boot_task_none() {
         use crate::hw::BootTask;
+        use crate::hw::BlackPillDevice;
         // Test that None task executes without panic
-        crate::boot_task::execute_boot_task(BootTask::None);
+        let device = BlackPillDevice::new();
+        crate::boot_task::execute_boot_task(BootTask::None, &device);
         // Test passes if no panic occurs
     }
 
@@ -143,8 +145,10 @@ mod tests {
     #[test]
     fn test_execute_boot_task_update_firmware() {
         use crate::hw::BootTask;
+        use crate::hw::BlackPillDevice;
         // Test that UpdateFirmware task executes without panic
-        crate::boot_task::execute_boot_task(BootTask::UpdateFirmware);
+        let device = BlackPillDevice::new();
+        crate::boot_task::execute_boot_task(BootTask::UpdateFirmware, &device);
         // Test passes if no panic occurs
     }
 
@@ -152,8 +156,10 @@ mod tests {
     #[test]
     fn test_execute_boot_task_run_self_test() {
         use crate::hw::BootTask;
+        use crate::hw::BlackPillDevice;
         // Test that RunSelfTest task executes without panic
-        crate::boot_task::execute_boot_task(BootTask::RunSelfTest);
+        let device = BlackPillDevice::new();
+        crate::boot_task::execute_boot_task(BootTask::RunSelfTest, &device);
         // Test passes if no panic occurs
     }
 
