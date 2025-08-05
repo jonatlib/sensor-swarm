@@ -4,7 +4,8 @@
 use super::parser::{Command, SensorType};
 use heapless::String;
 use core::fmt;
-use crate::hw::traits::DeviceManagement;
+use crate::hw::traits::{DeviceManagement, BackupRegisters};
+use crate::hw::{BootTask, BackupRegister};
 
 /// Response enum representing different types of command responses
 #[derive(Debug, Clone, PartialEq)]
@@ -150,7 +151,7 @@ impl<D: DeviceManagement> CommandExecutor<D> {
     }
 
     /// Execute a parsed command and return response
-    pub async fn execute(&self, command: Command) -> Response {
+    pub async fn execute(&mut self, command: Command) -> Response {
         match command {
             Command::Help => Response::Help,
             Command::GetStatus => Response::Status {
@@ -190,9 +191,18 @@ impl<D: DeviceManagement> CommandExecutor<D> {
                 self.device_manager.reboot();
             }
             Command::RebootToDfu => {
-                // Note: This will jump to DFU bootloader and never return
-                // We can't return a Response because the method never returns
-                self.device_manager.jump_to_dfu_bootloader();
+                // Register DFU boot task in backup domain and reboot
+                // This is safer than directly jumping to DFU bootloader
+                if let Some(backup_registers) = self.device_manager.get_backup_registers() {
+                    // Write DFU boot task to backup register
+                    backup_registers.write_register(BackupRegister::BootTask as usize, BootTask::DFUReboot as u32);
+                    
+                    // Now reboot - the boot task will be handled on next startup
+                    self.device_manager.reboot();
+                } else {
+                    // Fallback to direct DFU jump if backup registers not available
+                    self.device_manager.jump_to_dfu_bootloader();
+                }
             }
             Command::Unknown(cmd) => {
                 let mut message = String::new();

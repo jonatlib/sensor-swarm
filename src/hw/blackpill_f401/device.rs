@@ -11,12 +11,16 @@ use embassy_stm32::Config;
 /// Handles device initialization, clock configuration, and system management
 pub struct BlackPillDevice {
     initialized: bool,
+    backup_registers: Option<BlackPillBackupRegisters>,
 }
 
 impl BlackPillDevice {
     /// Create a new device manager instance
     pub fn new() -> Self {
-        Self { initialized: false }
+        Self { 
+            initialized: false,
+            backup_registers: None,
+        }
     }
 
 }
@@ -296,6 +300,13 @@ impl DeviceManagement for BlackPillDevice {
                 nvic.icpr[i].write(0xFFFFFFFF);
             }
         }
+    }
+
+    /// Get access to backup registers for boot task management
+    /// This method provides access to backup registers that have been initialized via init_rtc
+    /// Returns None if backup registers haven't been initialized yet
+    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters> {
+        self.backup_registers.as_mut()
     }
 
     /// Jump to the DFU bootloader without resetting the device

@@ -1,6 +1,7 @@
 /// Hardware-agnostic EEPROM implementation using eeprom crate and linker symbols
 /// Provides persistent storage using dedicated flash sector for STM32F411CE
 use crate::hw::traits::FlashStorage;
+use crate::usb_log;
 use core::ops::Range;
 use defmt::*;
 use embassy_stm32::flash::{Blocking, Flash};

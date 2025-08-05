@@ -103,6 +103,11 @@ pub trait DeviceManagement {
     /// This method takes the peripherals struct and extracts what it needs for RTC initialization
     /// Returns initialized backup registers instance and remaining peripherals
     fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters>;
+
+    /// Get access to backup registers for boot task management
+    /// This method provides access to backup registers that have been initialized via init_rtc
+    /// Returns None if backup registers haven't been initialized yet
+    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)
