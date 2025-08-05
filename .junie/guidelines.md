@@ -52,7 +52,8 @@ The device should be debuggable over serial over USB.
 
 # LLM guidelines
 
-If the project can't be compiled use `cargo check` to verify what are the compilation errors.
+If the project can't be compiled use `cargo check --message-format=json` to verify what are the compilation errors.
+Be sure to use the JSON format as it will be much more readable for LLM.
 
 
 # Memory Usage Guidelines
