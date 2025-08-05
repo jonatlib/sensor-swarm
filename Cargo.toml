@@ -23,16 +23,15 @@ harness = false
 
 
 [features]
-default = ["blackpill-f401", "embedded", "defmt-test"]
-blackpill-f401 = []
-hil = []
-defmt-test = ["dep:defmt-test"]
-embedded = [
+default = ["blackpill-f401", "defmt-test"]
+blackpill-f401 = [
     "embassy-stm32",
     "embassy-usb",
     "cortex-m",
     "cortex-m-rt"
 ]
+hil = []
+defmt-test = ["dep:defmt-test"]
 
 [dependencies]
 embassy-executor = { version = "0.8.0", features = ["defmt", "arch-cortex-m", "executor-thread"] }

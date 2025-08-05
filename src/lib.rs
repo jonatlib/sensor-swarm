@@ -2,24 +2,24 @@
 #![no_main]
 
 // Module declarations
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod app;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod backup_domain;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod boot_task;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod commands;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod hw;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod logging;
 pub mod radio;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod sensors;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod terminal;
-#[cfg(feature = "embedded")]
+#[cfg(feature = "blackpill-f401")]
 pub mod usb;
 
 #[cfg(feature = "defmt-test")]
@@ -101,7 +101,7 @@ mod tests {
     }
 
     // Tests from embedded modules
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_boot_task_from_u32() {
         use crate::hw::{BootTask, BackupRegister};
@@ -112,7 +112,7 @@ mod tests {
         defmt::assert!(BootTask::from(999) == BootTask::None); // Unknown values default to None
     }
 
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_boot_task_repr() {
         use crate::hw::{BootTask, BackupRegister};
@@ -122,7 +122,7 @@ mod tests {
         defmt::assert!(BootTask::DFUReboot as u32 == 3);
     }
 
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_backup_register_repr() {
         use crate::hw::{BootTask, BackupRegister};
@@ -130,7 +130,7 @@ mod tests {
         defmt::assert!(BackupRegister::BootCounter as usize == 1);
     }
 
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_execute_boot_task_none() {
         use crate::hw::BootTask;
@@ -141,7 +141,7 @@ mod tests {
         // Test passes if no panic occurs
     }
 
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_execute_boot_task_update_firmware() {
         use crate::hw::BootTask;
@@ -152,7 +152,7 @@ mod tests {
         // Test passes if no panic occurs
     }
 
-    #[cfg(feature = "embedded")]
+    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_execute_boot_task_run_self_test() {
         use crate::hw::BootTask;
@@ -173,8 +173,14 @@ use defmt_semihosting as _;
 #[cfg(feature = "defmt-test")]
 use panic_probe as _;
 
-#[cfg(feature = "defmt-test")]
+#[cfg(all(feature = "defmt-test", feature = "blackpill-f401"))]
 #[defmt::panic_handler]
 fn panic() -> ! {
     cortex_m::asm::udf()
+}
+
+#[cfg(all(feature = "defmt-test", not(feature = "blackpill-f401")))]
+#[defmt::panic_handler]
+fn panic() -> ! {
+    loop {}
 }
