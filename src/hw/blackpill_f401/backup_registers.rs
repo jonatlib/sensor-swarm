@@ -74,23 +74,3 @@ impl BackupRegisters for BlackPillBackupRegisters {
         20
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_register_count() {
-        // We can't easily test the actual hardware implementation in unit tests
-        // but we can test the constant values
-        assert_eq!(20, 20); // STM32F401 should have 20 backup registers
-    }
-
-    #[test]
-    fn test_index_bounds() {
-        // Test that our bounds checking logic is correct
-        let max_index = 19; // 0-19 for 20 registers
-        assert!(max_index < 20);
-        assert!(20 >= 20); // This would be out of bounds
-    }
-}

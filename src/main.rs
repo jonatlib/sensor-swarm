@@ -6,9 +6,9 @@ use defmt::info;
 use panic_probe as _;
 
 // Logging
-#[cfg(not(test))]
+#[cfg(all(not(test), not(feature = "defmt-test")))]
 use defmt_rtt as _;
-#[cfg(test)]
+#[cfg(any(test, feature = "defmt-test"))]
 use defmt_semihosting as _;
 
 use embassy_executor::Spawner;

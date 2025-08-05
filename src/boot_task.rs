@@ -47,29 +47,3 @@ pub fn execute_boot_task(boot_task: BootTask) {
     
     info!("Boot task execution completed");
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_execute_boot_task_none() {
-        // Test that None task executes without panic
-        execute_boot_task(BootTask::None);
-        // Test passes if no panic occurs
-    }
-
-    #[test]
-    fn test_execute_boot_task_update_firmware() {
-        // Test that UpdateFirmware task executes without panic
-        execute_boot_task(BootTask::UpdateFirmware);
-        // Test passes if no panic occurs
-    }
-
-    #[test]
-    fn test_execute_boot_task_run_self_test() {
-        // Test that RunSelfTest task executes without panic
-        execute_boot_task(BootTask::RunSelfTest);
-        // Test passes if no panic occurs
-    }
-}

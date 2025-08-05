@@ -33,29 +33,3 @@ impl From<u32> for BootTask {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_boot_task_from_u32() {
-        assert_eq!(BootTask::from(0), BootTask::None);
-        assert_eq!(BootTask::from(1), BootTask::UpdateFirmware);
-        assert_eq!(BootTask::from(2), BootTask::RunSelfTest);
-        assert_eq!(BootTask::from(999), BootTask::None); // Unknown values default to None
-    }
-
-    #[test]
-    fn test_boot_task_repr() {
-        assert_eq!(BootTask::None as u32, 0);
-        assert_eq!(BootTask::UpdateFirmware as u32, 1);
-        assert_eq!(BootTask::RunSelfTest as u32, 2);
-    }
-
-    #[test]
-    fn test_backup_register_repr() {
-        assert_eq!(BackupRegister::BootTask as usize, 0);
-        assert_eq!(BackupRegister::BootCounter as usize, 1);
-    }
-}
