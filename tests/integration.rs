@@ -22,8 +22,12 @@ mod tests {
     use sensor_swarm::radio::protocol::*;
 
     #[test]
-    fn test_integration_basic() {
-        // Basic integration test to verify the test framework is working
-        defmt::assert!(true);
+    fn test_packet_creation_integration() {
+        // Test actual packet creation functionality
+        let packet = Packet::new(0x1234, 0x5678, 42, b"test");
+        defmt::assert!(packet.header.sender_id == 0x1234);
+        defmt::assert!(packet.header.target_id == 0x5678);
+        defmt::assert!(packet.header.sequence_number == 42);
+        defmt::assert!(packet.payload_data() == b"test");
     }
 }
