@@ -68,9 +68,26 @@ pub trait DeviceManagement {
     /// This performs a standard system reset
     fn reboot(&self) -> !;
 
-    /// Reboot the device into the DFU bootloader
-    /// This allows for easy firmware updates via USB DFU
-    fn reboot_to_bootloader(&self) -> !;
+    /// Disable all interrupts to prevent interference during DFU transition
+    /// This should disable both cortex-m interrupts and any hardware-specific interrupts
+    fn disable_interrupts(&self);
+
+    /// De-initialize the RTC peripheral
+    /// This should reset the RTC to its default state and disable RTC clocking
+    fn deinitialize_rtc(&self);
+
+    /// De-initialize system clocks and prescalers
+    /// This should reset the clock configuration to default state
+    fn deinitialize_clocks(&self);
+
+    /// Clear any pending interrupts
+    /// This should clear all pending interrupts in the NVIC and other interrupt controllers
+    fn clear_pending_interrupts(&self);
+
+    /// Jump to the DFU bootloader without resetting the device
+    /// This transfers control directly to the STM32 system DFU bootloader
+    /// Note: This function will not return as it transfers control to the bootloader
+    fn jump_to_dfu_bootloader(&self) -> !;
 
     /// Initialize a timer peripheral and return it pre-configured
     /// This method takes the peripherals struct and extracts what it needs for timer initialization

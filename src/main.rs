@@ -53,7 +53,7 @@ fn init_rtc_and_boot_tasks(
     let boot_task = backup_domain.boot_task().read_and_clear();
     info!("Boot task consumed: {:?}", boot_task);
     
-    execute_boot_task(boot_task);
+    execute_boot_task(boot_task, device_manager);
     
     remaining_peripherals
 }

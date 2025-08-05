@@ -185,12 +185,14 @@ impl<D: DeviceManagement> CommandExecutor<D> {
                 sensor_count: 4,
             },
             Command::Reboot => {
-                // Call the device manager's reboot method
+                // Note: This will reboot the device and never return
+                // We can't return a Response because the method never returns
                 self.device_manager.reboot();
             }
             Command::RebootToDfu => {
-                // Call the device manager's reboot to bootloader method
-                self.device_manager.reboot_to_bootloader();
+                // Note: This will jump to DFU bootloader and never return
+                // We can't return a Response because the method never returns
+                self.device_manager.jump_to_dfu_bootloader();
             }
             Command::Unknown(cmd) => {
                 let mut message = String::new();

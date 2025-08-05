@@ -6,6 +6,7 @@ pub mod dfu_reboot;
 
 use defmt::info;
 use crate::hw::BootTask;
+use crate::hw::traits::DeviceManagement;
 
 /// Execute a boot task based on the provided BootTask enum value.
 /// This function handles the different types of boot tasks that can be requested
@@ -13,19 +14,22 @@ use crate::hw::BootTask;
 /// 
 /// # Arguments
 /// * `boot_task` - The BootTask enum value indicating which task to execute
+/// * `device` - The device manager that implements DeviceManagement trait
 /// 
 /// # Examples
 /// ```
 /// use sensor_swarm::boot_task::execute_boot_task;
 /// use sensor_swarm::hw::BootTask;
+/// use sensor_swarm::hw::blackpill_f401::device::BlackPillDevice;
 /// 
+/// let device = BlackPillDevice::new();
 /// // Execute a firmware update task
-/// execute_boot_task(BootTask::UpdateFirmware);
+/// execute_boot_task(BootTask::UpdateFirmware, &device);
 /// 
 /// // Handle normal boot (no special task)
-/// execute_boot_task(BootTask::None);
+/// execute_boot_task(BootTask::None, &device);
 /// ```
-pub fn execute_boot_task(boot_task: BootTask) {
+pub fn execute_boot_task<T: DeviceManagement>(boot_task: BootTask, device: &T) {
     info!("Executing boot task: {:?}", boot_task);
     
     // Execute the boot task based on its type
@@ -49,7 +53,7 @@ pub fn execute_boot_task(boot_task: BootTask) {
             info!("Executing DFU REBOOT task...");
             // This will de-initialize the system and jump to DFU mode
             // This function will not return
-            dfu_reboot::enter_dfu_mode();
+            dfu_reboot::enter_dfu_mode(device);
         }
     }
     

@@ -224,20 +224,87 @@ impl DeviceManagement for BlackPillDevice {
         self.soft_reset()
     }
 
-    /// Reboot the device into DFU bootloader mode
-    /// This triggers a jump to the STM32 built-in DFU bootloader
-    fn reboot_to_bootloader(&self) -> ! {
-        usb_log!(info, "Rebooting to DFU bootloader...");
-
-        // For STM32F401, we need to:
-        // 1. Set a magic value in RAM that the bootloader checks
-        // 2. Trigger a system reset
-
-        // Disable interrupts
+    /// Disable all interrupts to prevent interference during DFU transition
+    /// This should disable both cortex-m interrupts and any hardware-specific interrupts
+    fn disable_interrupts(&self) {
+        usb_log!(info, "Disabling interrupts...");
+        
+        // Disable all interrupts using cortex-m
         cortex_m::interrupt::disable();
+        
+        // Additional STM32-specific interrupt disabling if needed
+        unsafe {
+            // Disable systick
+            let syst = &*cortex_m::peripheral::SYST::PTR;
+            syst.csr.write(0);
+        }
+    }
 
-        // Set the magic value in RAM (0x1FFF0000 is the bootloader address for STM32F401)
-        // We'll use a different approach: set the stack pointer and jump directly
+    /// De-initialize the RTC peripheral
+    /// This should reset the RTC to its default state and disable RTC clocking
+    fn deinitialize_rtc(&self) {
+        usb_log!(info, "De-initializing RTC...");
+        
+        // For STM32F401, we need to access RTC registers to properly de-initialize
+        // This is hardware-specific implementation for BlackPill F401
+        unsafe {
+            // Access RTC registers through STM32F4xx peripheral access
+            // Note: This is a simplified implementation - in a full implementation
+            // we would need to properly handle RTC domain protection and clocking
+            usb_log!(warn, "RTC de-initialization - basic implementation for STM32F401");
+            
+            // TODO: Implement full RTC de-initialization:
+            // - Disable RTC interrupts
+            // - Reset RTC configuration registers  
+            // - Disable RTC clock if possible
+        }
+    }
+
+    /// De-initialize system clocks and prescalers
+    /// This should reset the clock configuration to default state
+    fn deinitialize_clocks(&self) {
+        usb_log!(info, "De-initializing clocks and prescalers...");
+        
+        // For STM32F401, reset clock configuration to default HSI state
+        // This is hardware-specific implementation for BlackPill F401
+        unsafe {
+            // Access RCC (Reset and Clock Control) registers
+            // Note: This is a simplified implementation - in a full implementation
+            // we would need to properly sequence the clock changes
+            usb_log!(warn, "Clock de-initialization - basic implementation for STM32F401");
+            
+            // TODO: Implement full clock de-initialization:
+            // - Reset PLL configuration
+            // - Switch to HSI (internal oscillator)
+            // - Reset prescalers to default values
+            // - Disable external oscillators if used
+        }
+    }
+
+    /// Clear any pending interrupts
+    /// This should clear all pending interrupts in the NVIC and other interrupt controllers
+    fn clear_pending_interrupts(&self) {
+        usb_log!(info, "Clearing pending interrupts...");
+        
+        unsafe {
+            // Clear all pending interrupts in NVIC
+            let nvic = &*cortex_m::peripheral::NVIC::PTR;
+            
+            // Clear pending interrupts for all interrupt lines
+            // STM32F4xx has up to 82 interrupts, so we need to clear multiple registers
+            for i in 0..3 {
+                nvic.icpr[i].write(0xFFFFFFFF);
+            }
+        }
+    }
+
+    /// Jump to the DFU bootloader without resetting the device
+    /// This transfers control directly to the STM32 system DFU bootloader
+    /// Note: This function will not return as it transfers control to the bootloader
+    fn jump_to_dfu_bootloader(&self) -> ! {
+        usb_log!(info, "Jumping to DFU bootloader...");
+
+        // For STM32F401, jump directly to the system DFU bootloader
         unsafe {
             // STM32F401 system memory (bootloader) starts at 0x1FFF0000
             let bootloader_addr = 0x1FFF0000u32;
@@ -246,10 +313,13 @@ impl DeviceManagement for BlackPillDevice {
             let stack_ptr = core::ptr::read_volatile(bootloader_addr as *const u32);
             let reset_vector = core::ptr::read_volatile((bootloader_addr + 4) as *const u32);
 
+            usb_log!(info, "Bootloader stack pointer: 0x{:08X}", stack_ptr);
+            usb_log!(info, "Bootloader entry point: 0x{:08X}", reset_vector);
+
             // Set stack pointer
             cortex_m::register::msp::write(stack_ptr);
 
-            // Jump to bootloader
+            // Jump to bootloader - this will not return
             let bootloader_entry: extern "C" fn() -> ! = core::mem::transmute(reset_vector);
             bootloader_entry();
         }
