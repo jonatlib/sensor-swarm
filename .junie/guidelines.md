@@ -56,6 +56,13 @@ If the project can't be compiled use `cargo check --message-format=json` to veri
 Be sure to use the JSON format as it will be much more readable for LLM.
 
 
+# Documentations and code examples
+
+Use context7 MCP.
+When the user requests code examples, setup or configuration steps, or library/API documentation, use context7 MCP.
+When investigating currently used crates, consult context7 for correct doccumentation!
+
+
 # Memory Usage Guidelines
 
 You should use memory tools thoughtfully to enhance conversation continuity and context retention:
