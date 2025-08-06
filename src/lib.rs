@@ -22,10 +22,16 @@ pub mod terminal;
 #[cfg(feature = "blackpill-f401")]
 pub mod usb;
 
+// Testing module - always available for tests
+pub mod testing;
+
 #[cfg(feature = "defmt-test")]
 #[defmt_test::tests]
 mod tests {
     use defmt::assert;
+    use crate::radio::protocol::*;
+    use crate::hw::{BootTask, BackupRegister};
+    use crate::testing::blackpill_f401::get_hw_mock;
 
     #[test]
     fn dummy_test() {
@@ -35,7 +41,6 @@ mod tests {
     // Tests from radio module (not gated behind embedded feature)
     #[test]
     fn test_packet_control_flags() {
-        use crate::radio::protocol::*;
         let mut control = PacketControl::new();
 
         // Test initial state
@@ -64,7 +69,6 @@ mod tests {
 
     #[test]
     fn test_packet_creation() {
-        use crate::radio::protocol::*;
         let payload = b"Hello, World!";
         let packet = Packet::new(0x1234, 0x5678, 42, payload);
 
@@ -77,7 +81,6 @@ mod tests {
 
     #[test]
     fn test_packet_serialization_deserialization() {
-        use crate::radio::protocol::*;
         let original_payload = b"Test data 123";
         let original_packet = Packet::new(0xABCD, 0xEF01, 999, original_payload);
 
@@ -100,11 +103,9 @@ mod tests {
         defmt::assert!(deserialized_packet == original_packet);
     }
 
-    // Tests from embedded modules
-    #[cfg(feature = "blackpill-f401")]
+    // Tests from embedded modules - now hardware-agnostic using testing module
     #[test]
     fn test_boot_task_from_u32() {
-        use crate::hw::{BootTask, BackupRegister};
         defmt::assert!(BootTask::from(0) == BootTask::None);
         defmt::assert!(BootTask::from(1) == BootTask::UpdateFirmware);
         defmt::assert!(BootTask::from(2) == BootTask::RunSelfTest);
@@ -112,53 +113,41 @@ mod tests {
         defmt::assert!(BootTask::from(999) == BootTask::None); // Unknown values default to None
     }
 
-    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_boot_task_repr() {
-        use crate::hw::{BootTask, BackupRegister};
         defmt::assert!(BootTask::None as u32 == 0);
         defmt::assert!(BootTask::UpdateFirmware as u32 == 1);
         defmt::assert!(BootTask::RunSelfTest as u32 == 2);
         defmt::assert!(BootTask::DFUReboot as u32 == 3);
     }
 
-    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_backup_register_repr() {
-        use crate::hw::{BootTask, BackupRegister};
         defmt::assert!(BackupRegister::BootTask as usize == 0);
         defmt::assert!(BackupRegister::BootCounter as usize == 1);
     }
 
-    #[cfg(feature = "blackpill-f401")]
+
     #[test]
     fn test_execute_boot_task_none() {
-        use crate::hw::BootTask;
-        use crate::hw::BlackPillDevice;
         // Test that None task executes without panic
-        let device = BlackPillDevice::new();
+        let device = get_hw_mock();
         crate::boot_task::execute_boot_task(BootTask::None, &device);
         // Test passes if no panic occurs
     }
 
-    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_execute_boot_task_update_firmware() {
-        use crate::hw::BootTask;
-        use crate::hw::BlackPillDevice;
         // Test that UpdateFirmware task executes without panic
-        let device = BlackPillDevice::new();
+        let device = get_hw_mock();
         crate::boot_task::execute_boot_task(BootTask::UpdateFirmware, &device);
         // Test passes if no panic occurs
     }
 
-    #[cfg(feature = "blackpill-f401")]
     #[test]
     fn test_execute_boot_task_run_self_test() {
-        use crate::hw::BootTask;
-        use crate::hw::BlackPillDevice;
         // Test that RunSelfTest task executes without panic
-        let device = BlackPillDevice::new();
+        let device = get_hw_mock();
         crate::boot_task::execute_boot_task(BootTask::RunSelfTest, &device);
         // Test passes if no panic occurs
     }
