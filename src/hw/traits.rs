@@ -11,6 +11,7 @@ pub struct DeviceInfo {
     pub ram_size: u32,
     pub system_clock_hz: u32,
     pub usb_clock_hz: u32,
+    pub unique_id_hex: heapless::String<24>,
 }
 
 /// Trait for abstracting debug interface setup
@@ -89,6 +90,14 @@ pub trait DeviceManagement<'d> {
     /// This transfers control directly to the STM32 system DFU bootloader
     /// Note: This function will not return as it transfers control to the bootloader
     fn jump_to_dfu_bootloader(&self) -> !;
+
+    /// Get the unique hardware ID as a byte array
+    /// Returns the device's unique identifier as raw bytes
+    fn get_unique_id_bytes(&self) -> [u8; 12];
+
+    /// Get the unique hardware ID as a hexadecimal string
+    /// Returns the device's unique identifier formatted as a hex string
+    fn get_unique_id_hex(&self) -> heapless::String<24>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)

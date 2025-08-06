@@ -96,6 +96,7 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
             ram_size: 64 * 1024,         // 64KB
             system_clock_hz: 84_000_000, // Updated to match Black Pill 25MHz HSE configuration
             usb_clock_hz: 48_000_000,
+            unique_id_hex: self.get_unique_id_hex(),
         }
     }
 
@@ -294,6 +295,19 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
             let bootloader_entry: extern "C" fn() -> ! = core::mem::transmute(reset_vector);
             bootloader_entry();
         }
+    }
+
+    /// Get the unique hardware ID as a byte array
+    /// Returns the device's unique identifier as raw bytes
+    fn get_unique_id_bytes(&self) -> [u8; 12] {
+        *embassy_stm32::uid::uid()
+    }
+
+    /// Get the unique hardware ID as a hexadecimal string
+    /// Returns the device's unique identifier formatted as a hex string
+    fn get_unique_id_hex(&self) -> heapless::String<24> {
+        heapless::String::try_from(embassy_stm32::uid::uid_hex())
+            .unwrap_or_else(|_| heapless::String::new())
     }
 }
 

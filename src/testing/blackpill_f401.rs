@@ -53,6 +53,7 @@ impl<'d> DeviceManagement<'d> for MockDevice {
             ram_size: 96 * 1024,
             system_clock_hz: 84_000_000,
             usb_clock_hz: 48_000_000,
+            unique_id_hex: self.get_unique_id_hex(),
         }
     }
 
@@ -90,6 +91,20 @@ impl<'d> DeviceManagement<'d> for MockDevice {
 
     fn jump_to_dfu_bootloader(&self) -> ! {
         loop {}
+    }
+
+    /// Get the unique hardware ID as a byte array (mock implementation)
+    /// Returns a mock unique identifier as raw bytes for testing
+    fn get_unique_id_bytes(&self) -> [u8; 12] {
+        // Mock UID for testing - represents a fake STM32 unique ID
+        [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44]
+    }
+
+    /// Get the unique hardware ID as a hexadecimal string (mock implementation)
+    /// Returns a mock unique identifier formatted as a hex string for testing
+    fn get_unique_id_hex(&self) -> heapless::String<24> {
+        heapless::String::try_from("123456789ABCDEF011223344")
+            .unwrap_or_else(|_| heapless::String::new())
     }
 }
 
