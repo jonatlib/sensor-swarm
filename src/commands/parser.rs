@@ -12,6 +12,8 @@ pub enum Command {
     ReadSensorType(SensorType),
     /// Get device debug information
     GetDebugInfo,
+    /// Get device information
+    GetDeviceInfo,
     /// Get device status
     GetStatus,
     /// Ping command for connectivity testing
@@ -71,6 +73,8 @@ impl CommandParser {
             Command::ReadSensorType(SensorType::Pressure)
         } else if matches_command("debug") || matches_command("debug_info") {
             Command::GetDebugInfo
+        } else if matches_command("device") || matches_command("info") || matches_command("device_info") {
+            Command::GetDeviceInfo
         } else if matches_command("status") {
             Command::GetStatus
         } else if matches_command("ping") {

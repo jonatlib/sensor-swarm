@@ -22,6 +22,7 @@ use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb::UsbCdcWrapper;
 use sensor_swarm::terminal::create_shared_terminal;
 use sensor_swarm::commands::run_command_handler;
+use sensor_swarm::commands::executor::Response;
 
 /// Initialize device manager and embassy framework
 /// 
@@ -39,6 +40,13 @@ fn init_device_and_embassy() -> BlackPillDevice {
     // Note: We can't re-initialize embassy after it's already initialized
     // The embassy_config is returned for reference but embassy is already configured
     info!("Device manager created with embassy config");
+    
+    // Log device information
+    let device_info = device_manager.get_device_info();
+    let response: Response = device_info.into();
+    let mut response_str = heapless::String::<512>::new();
+    let _ = core::fmt::write(&mut response_str, format_args!("{}", response));
+    info!("{}", response_str.as_str());
     
     device_manager
 }

@@ -4,7 +4,7 @@
 use super::parser::{Command, SensorType};
 use heapless::String;
 use core::fmt;
-use crate::hw::traits::{DeviceManagement, BackupRegisters};
+use crate::hw::traits::{DeviceManagement, BackupRegisters, DeviceInfo};
 use crate::hw::{BootTask, BackupRegister};
 
 /// Response enum representing different types of command responses
@@ -44,6 +44,16 @@ pub enum Response {
         usb_connected: bool,
         sensor_count: u8,
     },
+    /// Device information
+    DeviceInfo {
+        model: &'static str,
+        board: &'static str,
+        flash_size: u32,
+        ram_size: u32,
+        system_clock_hz: u32,
+        usb_clock_hz: u32,
+        unique_id_hex: heapless::String<24>,
+    },
     /// Reboot confirmation
     Reboot,
     /// DFU reboot confirmation
@@ -74,6 +84,21 @@ impl fmt::Display for SensorValue {
     }
 }
 
+/// Implement From trait to convert DeviceInfo to Response::DeviceInfo
+impl From<DeviceInfo> for Response {
+    fn from(device_info: DeviceInfo) -> Self {
+        Response::DeviceInfo {
+            model: device_info.model,
+            board: device_info.board,
+            flash_size: device_info.flash_size,
+            ram_size: device_info.ram_size,
+            system_clock_hz: device_info.system_clock_hz,
+            usb_clock_hz: device_info.usb_clock_hz,
+            unique_id_hex: device_info.unique_id_hex,
+        }
+    }
+}
+
 impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -86,6 +111,7 @@ impl fmt::Display for Response {
                 write!(f, "  light - Read light level\n")?;
                 write!(f, "  pressure - Read pressure\n")?;
                 write!(f, "  debug - Get debug info\n")?;
+                write!(f, "  device - Show device information\n")?;
                 write!(f, "  status - Show device status\n")?;
                 write!(f, "  ping - Test connectivity\n")?;
                 write!(f, "  version - Show firmware version\n")?;
@@ -125,6 +151,16 @@ impl fmt::Display for Response {
                 write!(f, "  Free Memory: {} bytes\n", free_memory)?;
                 write!(f, "  USB Connected: {}\n", usb_connected)?;
                 write!(f, "  Sensors: {} available", sensor_count)
+            }
+            Response::DeviceInfo { model, board, flash_size, ram_size, system_clock_hz, usb_clock_hz, unique_id_hex } => {
+                write!(f, "Device Information:\n")?;
+                write!(f, "  Model: {}\n", model)?;
+                write!(f, "  Board: {}\n", board)?;
+                write!(f, "  Flash Size: {} KB\n", flash_size / 1024)?;
+                write!(f, "  RAM Size: {} KB\n", ram_size / 1024)?;
+                write!(f, "  System Clock: {} MHz\n", system_clock_hz / 1_000_000)?;
+                write!(f, "  USB Clock: {} MHz\n", usb_clock_hz / 1_000_000)?;
+                write!(f, "  Unique ID: {}", unique_id_hex.as_str())
             }
             Response::Reboot => {
                 write!(f, "Rebooting device...")
@@ -184,6 +220,10 @@ impl<D: for<'d> DeviceManagement<'d>> CommandExecutor<D> {
                 free_memory: 8192,
                 usb_connected: true,
                 sensor_count: 4,
+            },
+            Command::GetDeviceInfo => {
+                let device_info = self.device_manager.get_device_info();
+                device_info.into()
             },
             Command::Reboot => {
                 // Note: This will reboot the device and never return
