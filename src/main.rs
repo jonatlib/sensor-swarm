@@ -30,8 +30,8 @@ use sensor_swarm::commands::Response;
 fn init_device_and_embassy() -> BlackPillDevice {
     info!("Initializing device and embassy framework");
     
-    // Get embassy peripherals first
-    let p = embassy_stm32::init(embassy_stm32::Config::default());
+    // Get embassy peripherals using BlackPill-specific configuration
+    let p = embassy_stm32::init(BlackPillDevice::get_embassy_config());
     
     // Create device manager with peripherals using new safe API
     let (embassy_config, device_manager) = BlackPillDevice::new_with_peripherals(p)

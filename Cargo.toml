@@ -21,6 +21,10 @@ harness = false
 name = "parser"
 harness = false
 
+[[test]]
+name = "hil"
+harness = false
+
 
 [features]
 default = ["blackpill-f401", "defmt-test"]

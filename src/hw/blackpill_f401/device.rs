@@ -36,7 +36,7 @@ impl BlackPillDevice {
 
     /// Get the Embassy configuration for STM32F401 Black Pill
     /// This is now a static method that doesn't require a device instance
-    fn get_embassy_config() -> embassy_stm32::Config {
+    pub fn get_embassy_config() -> embassy_stm32::Config {
         let mut config = embassy_stm32::Config::default();
         {
             use embassy_stm32::rcc::*;
