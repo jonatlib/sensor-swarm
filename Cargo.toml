@@ -24,6 +24,7 @@ harness = false
 [[test]]
 name = "hil"
 harness = false
+required-features = ["hil"]
 
 
 [features]
