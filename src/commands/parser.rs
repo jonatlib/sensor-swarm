@@ -1,6 +1,5 @@
 /// Command parsing module
 /// This module handles parsing command strings into structured Command enums
-
 use heapless::String;
 
 /// Represents different types of commands that can be sent over terminal
@@ -73,7 +72,10 @@ impl CommandParser {
             Command::ReadSensorType(SensorType::Pressure)
         } else if matches_command("debug") || matches_command("debug_info") {
             Command::GetDebugInfo
-        } else if matches_command("device") || matches_command("info") || matches_command("device_info") {
+        } else if matches_command("device")
+            || matches_command("info")
+            || matches_command("device_info")
+        {
             Command::GetDeviceInfo
         } else if matches_command("status") {
             Command::GetStatus

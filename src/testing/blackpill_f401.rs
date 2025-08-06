@@ -1,8 +1,7 @@
 /// Mock implementations for BlackPill F401 hardware for testing
 /// This module provides hardware-agnostic mock implementations that can be used
 /// in tests without requiring actual hardware peripherals.
-
-use crate::hw::traits::{DeviceManagement, DeviceInfo, Led, BackupRegisters};
+use crate::hw::traits::{BackupRegisters, DeviceInfo, DeviceManagement, Led};
 
 /// Mock LED implementation for testing
 /// Provides stub implementations of all LED operations
@@ -41,7 +40,9 @@ impl<'d> DeviceManagement<'d> for MockDevice {
     type UsbWrapper = ();
     type BackupRegisters = MockBackupRegisters;
 
-    fn new_with_peripherals(_peripherals: embassy_stm32::Peripherals) -> Result<(embassy_stm32::Config, Self), &'static str> {
+    fn new_with_peripherals(
+        _peripherals: embassy_stm32::Peripherals,
+    ) -> Result<(embassy_stm32::Config, Self), &'static str> {
         Ok((embassy_stm32::Config::default(), MockDevice))
     }
 
@@ -97,7 +98,9 @@ impl<'d> DeviceManagement<'d> for MockDevice {
     /// Returns a mock unique identifier as raw bytes for testing
     fn get_unique_id_bytes(&self) -> [u8; 12] {
         // Mock UID for testing - represents a fake STM32 unique ID
-        [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44]
+        [
+            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44,
+        ]
     }
 
     /// Get the unique hardware ID as a hexadecimal string (mock implementation)
@@ -109,20 +112,20 @@ impl<'d> DeviceManagement<'d> for MockDevice {
 }
 
 /// Get a mock hardware device for testing
-/// 
+///
 /// This function returns a mock device implementation that can be used
 /// in tests without requiring actual hardware peripherals. The mock device
 /// implements all the necessary traits but with stub implementations.
-/// 
+///
 /// # Returns
 /// A MockDevice instance that implements DeviceManagement trait
-/// 
+///
 /// # Examples
 /// ```
 /// use sensor_swarm::testing::blackpill_f401::get_hw_mock;
 /// use sensor_swarm::boot_task::execute_boot_task;
 /// use sensor_swarm::hw::BootTask;
-/// 
+///
 /// let device = get_hw_mock();
 /// execute_boot_task(BootTask::None, &device);
 /// ```

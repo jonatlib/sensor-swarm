@@ -81,7 +81,7 @@ impl Led for BlackPillLed {
             }
         }
 
-        info!( "LED brightness set to: {}", brightness);
+        info!("LED brightness set to: {}", brightness);
     }
 }
 
@@ -184,13 +184,13 @@ impl BlackPillLedManager {
 
     /// Initialize the LED manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        info!( "Initializing LED manager...");
+        info!("Initializing LED manager...");
 
         // LED initialization is handled per-LED basis
         // This method can be used for any global LED setup if needed
 
         self.initialized = true;
-        info!( "LED manager initialized successfully");
+        info!("LED manager initialized successfully");
         Ok(())
     }
 
@@ -242,10 +242,6 @@ mod hil_tests {
     //! ```bash
     //! cargo test --features hil --target thumbv7em-none-eabihf
     //! ```
-
-    use super::*;
-    use defmt_test::*;
-    use embassy_time::{Duration, Timer};
 
     #[test]
     async fn test_led_hardware_toggle() {

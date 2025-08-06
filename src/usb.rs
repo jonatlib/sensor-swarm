@@ -1,7 +1,6 @@
 /// Hardware-agnostic USB communication module
 /// This module provides USB CDC communication functionality that is independent of specific hardware implementations
 /// The UsbManager for hardware-specific initialization remains in the hw module
-
 use embassy_stm32::usb::Driver;
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 
@@ -11,11 +10,17 @@ use embassy_usb::class::cdc_acm::CdcAcmClass;
 pub trait UsbCdc {
     /// Write bytes to USB CDC
     /// Returns the number of bytes written or an error
-    fn write(&mut self, data: &[u8]) -> impl core::future::Future<Output = Result<usize, &'static str>>;
+    fn write(
+        &mut self,
+        data: &[u8],
+    ) -> impl core::future::Future<Output = Result<usize, &'static str>>;
 
     /// Read bytes from USB CDC (non-blocking)
     /// Returns the number of bytes read or an error
-    fn read(&mut self, buffer: &mut [u8]) -> impl core::future::Future<Output = Result<usize, &'static str>>;
+    fn read(
+        &mut self,
+        buffer: &mut [u8],
+    ) -> impl core::future::Future<Output = Result<usize, &'static str>>;
 
     /// Check if USB CDC is connected and ready for communication
     fn is_connected(&self) -> bool;
@@ -49,7 +54,7 @@ impl UsbCdc for UsbCdcWrapper {
         if !self.connected {
             return Err("USB not connected");
         }
-        
+
         match self.cdc_class.write_packet(data).await {
             Ok(_) => Ok(data.len()),
             Err(_) => {
@@ -69,16 +74,16 @@ impl UsbCdc for UsbCdcWrapper {
         match embassy_futures::select::select(
             self.cdc_class.read_packet(buffer),
             embassy_time::Timer::after_millis(1),
-        ).await {
-            embassy_futures::select::Either::First(result) => {
-                match result {
-                    Ok(len) => Ok(len),
-                    Err(_) => {
-                        self.connected = false;
-                        Err("USB read failed")
-                    }
+        )
+        .await
+        {
+            embassy_futures::select::Either::First(result) => match result {
+                Ok(len) => Ok(len),
+                Err(_) => {
+                    self.connected = false;
+                    Err("USB read failed")
                 }
-            }
+            },
             embassy_futures::select::Either::Second(_) => {
                 // Timeout - no data available
                 Ok(0)

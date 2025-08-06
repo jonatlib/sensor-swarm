@@ -1,7 +1,6 @@
 /// Hardware-independent Terminal module
 /// This module provides a Terminal struct that can work with any UsbCdc implementation
 /// The Terminal handles logging, command input/output, and can be shared between tasks
-
 use crate::usb::UsbCdc;
 use embassy_sync::{blocking_mutex::raw::NoopRawMutex, mutex::Mutex};
 use heapless::String;
@@ -38,7 +37,7 @@ impl<T: UsbCdc> Terminal<T> {
 
         // Add newline for proper terminal display
         let mut log_msg = String::<512>::new();
-        if core::fmt::write(&mut log_msg, format_args!("{}\r\n", message)).is_ok() {
+        if core::fmt::write(&mut log_msg, format_args!("{message}\r\n")).is_ok() {
             match self.usb_cdc.write(log_msg.as_bytes()).await {
                 Ok(_) => Ok(()),
                 Err(e) => Err(e),

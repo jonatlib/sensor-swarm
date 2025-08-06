@@ -1,9 +1,3 @@
-/// Hardware-independent logging module
-/// This module provides logging functionality that uses the Terminal for output
-/// It maintains compatibility with defmt for RTT logging while adding Terminal support
-
-use heapless::String;
-
 /// Log an info message to defmt (RTT)
 pub fn log_info(args: &core::fmt::Arguments<'_>) {
     defmt::info!("{}", defmt::Display2Format(args));

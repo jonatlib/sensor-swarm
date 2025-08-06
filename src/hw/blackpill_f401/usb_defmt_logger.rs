@@ -1,6 +1,3 @@
-/// Direct USB logging implementation - no buffering, sends directly to USB when available
-/// This module provides direct USB logging that works alongside defmt/RTT logging
-use defmt::*;
 use heapless::String;
 
 /// Simple ring buffer for USB log messages

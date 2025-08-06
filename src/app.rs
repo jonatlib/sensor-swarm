@@ -59,7 +59,7 @@ where
             // - Listen for incoming radio packets
             // - Process received commands and data
             // - Manage network topology and routing
-            
+
             // Heartbeat pattern using hardware-agnostic LED trait
             self.led.on();
             Timer::after_millis(100).await;

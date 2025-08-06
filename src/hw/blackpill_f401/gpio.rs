@@ -17,8 +17,7 @@ impl BlackPillGpioInit {
     ) -> Output<'static> {
         info!(
             "Initializing GPIO output pin with level: {:?}, speed: {:?}",
-            initial_level,
-            speed
+            initial_level, speed
         );
         Output::new(pin.degrade(), initial_level, speed)
     }
@@ -31,7 +30,7 @@ impl BlackPillGpioInit {
     /// Create a new GPIO pin as input
     /// Returns Embassy Input type directly - no wrapper needed
     pub fn init_input(pin: impl Pin + 'static, pull: Pull) -> Input<'static> {
-        info!( "Initializing GPIO input pin with pull: {:?}", pull);
+        info!("Initializing GPIO input pin with pull: {:?}", pull);
         Input::new(pin.degrade(), pull)
     }
 
@@ -71,13 +70,13 @@ impl BlackPillGpioManager {
 
     /// Initialize the GPIO manager
     pub fn init(&mut self) -> Result<(), &'static str> {
-        info!( "Initializing GPIO manager...");
+        info!("Initializing GPIO manager...");
 
         // GPIO initialization is handled per-pin basis
         // This method can be used for any global GPIO setup if needed
 
         self.pins_initialized = true;
-        info!( "GPIO manager initialized successfully");
+        info!("GPIO manager initialized successfully");
         Ok(())
     }
 

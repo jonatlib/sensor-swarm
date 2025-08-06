@@ -1,7 +1,6 @@
 /// Hardware-agnostic backup domain management
 /// This module provides safe, reusable structures for managing tasks that need to be
 /// performed after a device reset, leveraging Rust's type system to prevent common bugs.
-
 use crate::hw::traits::BackupRegisters;
 use crate::hw::{BackupRegister, BootTask};
 
@@ -20,10 +19,10 @@ where
     B: BackupRegisters,
 {
     /// Creates a new BackupDomain from an initialized backup registers implementation.
-    /// 
+    ///
     /// # Arguments
     /// * `backup_registers` - An implementation of the BackupRegisters trait
-    /// 
+    ///
     /// # Returns
     /// A new BackupDomain instance
     pub fn new(backup_registers: B) -> Self {
@@ -32,7 +31,7 @@ where
 
     /// Provides a specialized accessor for the boot task register.
     /// It takes a mutable reference to self to ensure exclusive access.
-    /// 
+    ///
     /// # Returns
     /// A BootTaskAccessor that provides safe access to boot task operations
     pub fn boot_task(&mut self) -> BootTaskAccessor<'_, B> {
@@ -56,22 +55,24 @@ where
 {
     /// Reads the boot task from the register AND immediately clears it.
     /// This atomic read-and-clear prevents the task from being executed more than once.
-    /// 
+    ///
     /// # Returns
     /// The BootTask that was stored in the register before clearing
     pub fn read_and_clear(&mut self) -> BootTask {
         let task_reg = BackupRegister::BootTask as usize;
         let raw_value = self.domain.backup_registers.read_register(task_reg);
-        
+
         // Clear the register immediately after reading
-        self.domain.backup_registers.write_register(task_reg, BootTask::None as u32);
-        
+        self.domain
+            .backup_registers
+            .write_register(task_reg, BootTask::None as u32);
+
         BootTask::from(raw_value)
     }
 
     /// Writes a new boot task to the register.
     /// Typically used before triggering a software reset.
-    /// 
+    ///
     /// # Arguments
     /// * `task` - The BootTask to store in the backup register
     pub fn write(&mut self, task: BootTask) {

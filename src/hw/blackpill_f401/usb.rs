@@ -3,10 +3,9 @@
 use crate::usb::UsbCdcWrapper;
 use defmt::*;
 use embassy_stm32::bind_interrupts;
-use embassy_stm32::usb::{Driver, Config as UsbConfig};
+use embassy_stm32::usb::{Config as UsbConfig, Driver};
 use embassy_usb::class::cdc_acm::CdcAcmClass;
-use embassy_usb::{Builder, Config, UsbDevice};
-use heapless::String;
+use embassy_usb::{Builder, Config};
 
 // Bind USB OTG FS interrupt
 bind_interrupts!(struct Irqs {
@@ -19,20 +18,13 @@ pub struct UsbManager {
     initialized: bool,
 }
 
-
-
-
-
-
 // USB components are now returned directly from init_with_peripheral
 // No global statics needed - Embassy tasks will own the components
 
 impl UsbManager {
     /// Create a new USB Manager instance
     pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
 
     /// Initialize USB peripheral with real USB functionality
@@ -112,9 +104,6 @@ impl UsbManager {
         Ok(UsbCdcWrapper::new(cdc_class))
     }
 }
-
-
-
 
 impl Default for UsbManager {
     fn default() -> Self {

@@ -1,6 +1,5 @@
 /// Terminal input handling and buffering module
 /// This module handles reading data from terminal and buffering until ENTER key
-
 use crate::terminal::SharedTerminal;
 use crate::usb::UsbCdc;
 use heapless::{String, Vec};
@@ -25,7 +24,9 @@ impl<T: UsbCdc> InputHandler<T> {
 
     /// Main input handling loop - reads and buffers terminal input
     /// Returns complete command strings when ENTER is detected
-    pub async fn read_command(&mut self) -> Result<Option<String<COMMAND_BUFFER_SIZE>>, &'static str> {
+    pub async fn read_command(
+        &mut self,
+    ) -> Result<Option<String<COMMAND_BUFFER_SIZE>>, &'static str> {
         let mut temp_buffer = [0u8; 32];
 
         // Wait for terminal connection
@@ -33,7 +34,9 @@ impl<T: UsbCdc> InputHandler<T> {
             let mut terminal = self.terminal.lock().await;
             if !terminal.is_connected() {
                 terminal.wait_connection().await;
-                let _ = terminal.write_logs("Command handler ready - type 'help' for available commands").await;
+                let _ = terminal
+                    .write_logs("Command handler ready - type 'help' for available commands")
+                    .await;
             }
         }
 
@@ -82,12 +85,12 @@ impl<T: UsbCdc> InputHandler<T> {
                     }
                     32..=126 => {
                         // Printable ASCII character
-                        if self.command_buffer.len() < COMMAND_BUFFER_SIZE - 1 {
-                            if self.command_buffer.push(byte).is_ok() {
-                                // Echo character back to terminal
-                                let mut terminal = self.terminal.lock().await;
-                                let _ = terminal.write_bytes(&[byte]).await;
-                            }
+                        if self.command_buffer.len() < COMMAND_BUFFER_SIZE - 1
+                            && self.command_buffer.push(byte).is_ok()
+                        {
+                            // Echo character back to terminal
+                            let mut terminal = self.terminal.lock().await;
+                            let _ = terminal.write_bytes(&[byte]).await;
                         }
                     }
                     _ => {

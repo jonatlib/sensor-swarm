@@ -20,9 +20,9 @@ pub enum BootTask {
     /// A task to update the firmware.
     UpdateFirmware, // Will be 1
     /// A task to run a system self-test.
-    RunSelfTest,    // Will be 2
+    RunSelfTest, // Will be 2
     /// A task to reboot into DFU mode.
-    DFUReboot,      // Will be 3
+    DFUReboot, // Will be 3
 }
 
 /// Safely converts a raw u32 value from the register into a BootTask.

@@ -36,7 +36,9 @@ pub trait DeviceManagement<'d> {
     /// Create a new device manager instance with peripherals
     /// This static method returns the Embassy configuration and creates the device manager
     /// with the peripherals stored internally
-    fn new_with_peripherals(peripherals: embassy_stm32::Peripherals) -> Result<(embassy_stm32::Config, Self), &'static str>
+    fn new_with_peripherals(
+        peripherals: embassy_stm32::Peripherals,
+    ) -> Result<(embassy_stm32::Config, Self), &'static str>
     where
         Self: Sized;
 
@@ -54,7 +56,9 @@ pub trait DeviceManagement<'d> {
     /// Create USB peripheral from stored peripherals
     /// This method uses the internally stored peripherals to create a USB wrapper instance
     /// The USB wrapper is bound to the device manager's lifetime
-    fn create_usb(&'d mut self) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send;
+    fn create_usb(
+        &'d mut self,
+    ) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send;
 
     /// Create RTC peripheral and backup registers from stored peripherals
     /// This method uses the internally stored peripherals to create backup registers
@@ -159,7 +163,6 @@ pub trait UsbLogger {
 
 // SPI functionality is provided directly by Embassy SPI traits
 // No custom trait needed - use embassy_stm32::spi::Spi and related traits directly
-
 
 /// Trait for abstracting Flash/EEPROM operations
 /// Implementations should provide hardware-agnostic persistent storage

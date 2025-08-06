@@ -28,10 +28,10 @@ pub mod testing;
 #[cfg(feature = "defmt-test")]
 #[defmt_test::tests]
 mod tests {
-    use defmt::assert;
+    use crate::hw::{BackupRegister, BootTask};
     use crate::radio::protocol::*;
-    use crate::hw::{BootTask, BackupRegister};
     use crate::testing::blackpill_f401::get_hw_mock;
+    use defmt::assert;
 
     #[test]
     fn dummy_test() {
@@ -126,7 +126,6 @@ mod tests {
         defmt::assert!(BackupRegister::BootTask as usize == 0);
         defmt::assert!(BackupRegister::BootCounter as usize == 1);
     }
-
 
     #[test]
     fn test_execute_boot_task_none() {

@@ -141,4 +141,3 @@ impl Packet {
         Self { header, payload }
     }
 }
-

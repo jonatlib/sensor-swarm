@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use defmt::info;
 use defmt_semihosting as _;
 // Replaced by semihosing, for testing, if logging works, remove this.
 // use defmt_rtt as _; // global logger
@@ -18,7 +17,7 @@ fn panic() -> ! {
 #[cfg(test)]
 #[defmt_test::tests]
 mod tests {
-    use super::*;
+
     use sensor_swarm::radio::protocol::*;
 
     #[test]
