@@ -29,7 +29,7 @@ use crate::hw::traits::DeviceManagement;
 /// // Handle normal boot (no special task)
 /// execute_boot_task(BootTask::None, &device);
 /// ```
-pub fn execute_boot_task<T: DeviceManagement>(boot_task: BootTask, device: &T) {
+pub fn execute_boot_task<T: for<'d> DeviceManagement<'d>>(boot_task: BootTask, device: &T) {
     info!("Executing boot task: {:?}", boot_task);
     
     // Execute the boot task based on its type

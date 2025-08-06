@@ -32,7 +32,7 @@ use defmt::info;
 /// // This will not return
 /// enter_dfu_mode(&device);
 /// ```
-pub fn enter_dfu_mode<T: DeviceManagement>(device: &T) -> ! {
+pub fn enter_dfu_mode<T: for<'d> DeviceManagement<'d>>(device: &T) -> ! {
     info!("Initiating DFU reboot sequence...");
     
     // Step 1: Disable all interrupts to prevent interference

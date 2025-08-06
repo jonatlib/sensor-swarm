@@ -10,7 +10,7 @@ use embassy_time::Timer;
 pub struct SensorApp<L, D>
 where
     L: Led,
-    D: DeviceManagement,
+    D: for<'d> DeviceManagement<'d>,
 {
     led: L,
     device_manager: D,
@@ -19,7 +19,7 @@ where
 impl<L, D> SensorApp<L, D>
 where
     L: Led,
-    D: DeviceManagement,
+    D: for<'d> DeviceManagement<'d>,
 {
     /// Create a new sensor application instance
     pub fn new(led: L, device_manager: D) -> Self {

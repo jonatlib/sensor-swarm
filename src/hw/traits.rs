@@ -1,9 +1,6 @@
 /// Hardware abstraction traits for core utilities
 /// These traits provide a hardware-agnostic interface for debugging and device management
 
-/// Type alias for initialization results that return a component and remaining peripherals
-pub type InitResult<T> = Result<(T, embassy_stm32::Peripherals), &'static str>;
-
 /// Device information structure
 /// Contains hardware-specific information about the device
 #[derive(Debug, Clone)]
@@ -24,26 +21,23 @@ pub trait DebugInterface {
     fn init(&mut self) -> impl core::future::Future<Output = Result<(), &'static str>> + Send;
 }
 
-/// Trait for abstracting device management operations
-/// Implementations should provide platform-specific device control functions
-pub trait DeviceManagement {
-    /// Timer peripheral type that will be returned by init_timer
-    type Timer: embassy_stm32::Peripheral;
-    /// SPI peripheral type that will be returned by init_spi
-    type Spi: embassy_stm32::Peripheral;
-    /// LED type that will be returned by init_peripherals
+/// Trait for abstracting device management operations with safe peripheral handling
+/// This trait uses lifetimes to bind peripherals safely to the device manager,
+/// eliminating the need for unsafe pointer operations
+pub trait DeviceManagement<'d> {
+    /// LED type that will be created from stored peripherals
     type Led: crate::hw::traits::Led;
-    /// USB Wrapper type that will be returned by init_usb
+    /// USB Wrapper type that will be created from stored peripherals
     type UsbWrapper;
-    /// BackupRegisters type that will be returned by init_rtc
+    /// BackupRegisters type that will be created from stored peripherals
     type BackupRegisters: crate::hw::traits::BackupRegisters;
 
-    /// Initialize the device with proper clock configuration
-    /// This sets up the system clocks and returns the Embassy configuration
-    fn init(&mut self) -> Result<embassy_stm32::Config, &'static str>;
-
-    /// Check if the device has been initialized
-    fn is_initialized(&self) -> bool;
+    /// Create a new device manager instance with peripherals
+    /// This static method returns the Embassy configuration and creates the device manager
+    /// with the peripherals stored internally
+    fn new_with_peripherals(peripherals: embassy_stm32::Peripherals) -> Result<(embassy_stm32::Config, Self), &'static str>
+    where
+        Self: Sized;
 
     /// Get device information including model, board, memory sizes, and clock frequencies
     fn get_device_info(&self) -> DeviceInfo;
@@ -51,18 +45,25 @@ pub trait DeviceManagement {
     /// Perform a soft reset of the device
     fn soft_reset(&self) -> !;
 
-    /// Initialize LED peripheral separately for early debugging
-    /// This method takes the full peripherals struct and extracts what it needs for LED initialization
-    /// Returns initialized LED instance and remaining peripherals
-    fn init_led(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Led>;
+    /// Create LED peripheral from stored peripherals for early debugging
+    /// This method uses the internally stored peripherals to create an LED instance
+    /// The LED is bound to the device manager's lifetime
+    fn create_led(&'d mut self) -> Result<Self::Led, &'static str>;
 
-    /// Initialize USB peripheral from embassy_stm32::init output
-    /// This method takes the peripherals struct and extracts what it needs for USB initialization
-    /// Returns initialized USB wrapper instance and remaining peripherals
-    fn init_usb(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> impl core::future::Future<Output = InitResult<Self::UsbWrapper>> + Send;
+    /// Create USB peripheral from stored peripherals
+    /// This method uses the internally stored peripherals to create a USB wrapper instance
+    /// The USB wrapper is bound to the device manager's lifetime
+    fn create_usb(&'d mut self) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send;
+
+    /// Create RTC peripheral and backup registers from stored peripherals
+    /// This method uses the internally stored peripherals to create backup registers
+    /// The backup registers are bound to the device manager's lifetime
+    fn create_rtc(&'d mut self) -> Result<Self::BackupRegisters, &'static str>;
+
+    /// Get access to backup registers for boot task management
+    /// This method provides access to backup registers that have been created via create_rtc
+    /// Returns None if backup registers haven't been created yet
+    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters>;
 
     /// Reboot the device normally
     /// This performs a standard system reset
@@ -88,26 +89,6 @@ pub trait DeviceManagement {
     /// This transfers control directly to the STM32 system DFU bootloader
     /// Note: This function will not return as it transfers control to the bootloader
     fn jump_to_dfu_bootloader(&self) -> !;
-
-    /// Initialize a timer peripheral and return it pre-configured
-    /// This method takes the peripherals struct and extracts what it needs for timer initialization
-    /// Returns initialized timer instance and remaining peripherals
-    fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer>;
-
-    /// Initialize an SPI peripheral and return it pre-configured
-    /// This method takes the peripherals struct and extracts what it needs for SPI initialization
-    /// Returns initialized SPI instance and remaining peripherals
-    fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi>;
-
-    /// Initialize RTC peripheral and return backup registers wrapper
-    /// This method takes the peripherals struct and extracts what it needs for RTC initialization
-    /// Returns initialized backup registers instance and remaining peripherals
-    fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters>;
-
-    /// Get access to backup registers for boot task management
-    /// This method provides access to backup registers that have been initialized via init_rtc
-    /// Returns None if backup registers haven't been initialized yet
-    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters>;
 }
 
 // GPIO functionality is provided directly by Embassy GPIO types (Output, Input)

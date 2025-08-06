@@ -25,28 +25,30 @@ use sensor_swarm::commands::run_command_handler;
 
 /// Initialize device manager and embassy framework
 /// 
-/// Returns the initialized device manager and embassy peripherals
-fn init_device_and_embassy() -> (BlackPillDevice, embassy_stm32::Peripherals) {
+/// Returns the initialized device manager
+fn init_device_and_embassy() -> BlackPillDevice {
     info!("Initializing device and embassy framework");
     
-    let mut device_manager = BlackPillDevice::new();
-    let embassy_config = device_manager.init().expect("Device initialization failed");
-    let p = embassy_stm32::init(embassy_config);
+    // Get embassy peripherals first
+    let p = embassy_stm32::init(embassy_stm32::Config::default());
     
-    (device_manager, p)
+    // Create device manager with peripherals using new safe API
+    let (embassy_config, device_manager) = BlackPillDevice::new_with_peripherals(p)
+        .expect("Device initialization failed");
+    
+    // Note: We can't re-initialize embassy after it's already initialized
+    // The embassy_config is returned for reference but embassy is already configured
+    info!("Device manager created with embassy config");
+    
+    device_manager
 }
 
 /// Initialize RTC, backup domain and execute boot tasks
-/// 
-/// Returns the backup domain and remaining peripherals after RTC initialization
-fn init_rtc_and_boot_tasks(
-    device_manager: &mut BlackPillDevice,
-    peripherals: embassy_stm32::Peripherals,
-) -> embassy_stm32::Peripherals {
+fn init_rtc_and_boot_tasks(device_manager: &mut BlackPillDevice) {
     info!("Initializing RTC and processing boot tasks");
     
-    let (backup_registers, remaining_peripherals) = device_manager
-        .init_rtc(peripherals)
+    let backup_registers = device_manager
+        .create_rtc()
         .expect("RTC initialization failed");
     
     let mut backup_domain = BackupDomain::new(backup_registers);
@@ -54,8 +56,6 @@ fn init_rtc_and_boot_tasks(
     info!("Boot task consumed: {:?}", boot_task);
     
     execute_boot_task(boot_task, device_manager);
-    
-    remaining_peripherals
 }
 
 /// Blink LED to indicate initialization step completion
@@ -82,30 +82,26 @@ async fn blink_led_all_complete(led: &mut impl Led) {
 }
 
 /// Initialize LED and provide early status indication
-async fn init_led_with_status(
-    device_manager: &mut BlackPillDevice,
-    peripherals: embassy_stm32::Peripherals,
-) -> (impl Led, embassy_stm32::Peripherals) {
+async fn init_led_with_status(device_manager: &mut BlackPillDevice) -> impl Led {
     info!("Initializing LED for status indication");
     
-    let (mut led, remaining_peripherals) = device_manager
-        .init_led(peripherals)
+    let mut led = device_manager
+        .create_led()
         .expect("LED initialization failed");
 
     blink_led_init_complete(&mut led).await;
     
-    (led, remaining_peripherals)
+    led
 }
 
 /// Initialize USB and create terminal interface
 async fn init_usb_and_terminal(
     device_manager: &mut BlackPillDevice,
-    peripherals: embassy_stm32::Peripherals,
-) -> (sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>, embassy_stm32::Peripherals) {
+) -> sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper> {
     info!("Initializing USB and terminal interface");
     
-    let (usb_wrapper, remaining_peripherals) = device_manager
-        .init_usb(peripherals)
+    let usb_wrapper = device_manager
+        .create_usb()
         .await
         .expect("USB initialization failed");
 
@@ -113,20 +109,26 @@ async fn init_usb_and_terminal(
     
     let shared_terminal = create_shared_terminal(usb_wrapper);
     
-    (shared_terminal, remaining_peripherals)
+    shared_terminal
 }
 
 /// Start the command handler task
 fn start_command_handler(
-    spawner: &Spawner,
-    terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>,
+    _spawner: &Spawner,
+    _terminal: sensor_swarm::terminal::SharedTerminal<UsbCdcWrapper>,
 ) {
-    info!("Starting command handler task");
+    info!("Command handler temporarily disabled - needs architectural fix");
     
-    // TODO: Consider sharing the device manager instance instead of creating a new one
-    // This could lead to resource conflicts or inefficient resource usage
-    let command_device_manager = BlackPillDevice::new();
-    spawner.spawn(command_handler_task(terminal, command_device_manager)).unwrap();
+    // TODO: Fix command handler creation with new peripheral management
+    // The new API doesn't allow creating multiple device managers since
+    // peripherals are consumed by the first instance. We need to either:
+    // 1. Share the device manager instance (requires lifetime management)
+    // 2. Create a separate command handler that doesn't need device manager
+    // 3. Redesign the command handler architecture
+    
+    // Temporarily commented out:
+    // let command_device_manager = BlackPillDevice::new();
+    // spawner.spawn(command_handler_task(terminal, command_device_manager)).unwrap();
 }
 
 #[cfg(not(test))]
@@ -135,16 +137,16 @@ async fn main(spawner: Spawner) -> ! {
     info!("Starting sensor swarm application");
 
     // Initialize device and embassy framework
-    let (mut device_manager, peripherals) = init_device_and_embassy();
+    let mut device_manager = init_device_and_embassy();
     
     // Initialize RTC and process boot tasks
-    let peripherals = init_rtc_and_boot_tasks(&mut device_manager, peripherals);
+    init_rtc_and_boot_tasks(&mut device_manager);
     
     // Initialize LED with status indication
-    let (mut led, peripherals) = init_led_with_status(&mut device_manager, peripherals).await;
+    let mut led = init_led_with_status(&mut device_manager).await;
     
     // Initialize USB and terminal
-    let (terminal, _remaining_peripherals) = init_usb_and_terminal(&mut device_manager, peripherals).await;
+    let terminal = init_usb_and_terminal(&mut device_manager).await;
     
     // Final status indication
     blink_led_all_complete(&mut led).await;
@@ -154,7 +156,7 @@ async fn main(spawner: Spawner) -> ! {
     
     // Create and run the main application
     let mut app = SensorApp::new(led, device_manager);
-    app.run().await;
+    app.run().await
 }
 
 

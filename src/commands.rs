@@ -20,13 +20,13 @@ pub use parser::CommandParser;
 pub use executor::{CommandExecutor, Response, SensorValue};
 
 /// Main command handler that coordinates all sub-modules
-pub struct CommandHandler<T: UsbCdc, D: DeviceManagement> {
+pub struct CommandHandler<T: UsbCdc, D: for<'d> DeviceManagement<'d>> {
     input_handler: InputHandler<T>,
     parser: CommandParser,
     executor: CommandExecutor<D>,
 }
 
-impl<T: UsbCdc, D: DeviceManagement> CommandHandler<T, D> {
+impl<T: UsbCdc, D: for<'d> DeviceManagement<'d>> CommandHandler<T, D> {
     /// Create a new command handler with the given shared terminal and device manager
     pub fn new(terminal: SharedTerminal<T>, device_manager: D) -> Self {
         Self {
@@ -75,7 +75,7 @@ impl<T: UsbCdc, D: DeviceManagement> CommandHandler<T, D> {
 
 /// Create and run a command handler task
 /// This is a convenience function for spawning the command handler
-pub async fn run_command_handler<T: UsbCdc, D: DeviceManagement>(terminal: SharedTerminal<T>, device_manager: D) -> Result<(), &'static str> {
+pub async fn run_command_handler<T: UsbCdc, D: for<'d> DeviceManagement<'d>>(terminal: SharedTerminal<T>, device_manager: D) -> Result<(), &'static str> {
     let mut handler = CommandHandler::new(terminal, device_manager);
     handler.run().await
 }

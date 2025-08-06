@@ -140,11 +140,11 @@ impl fmt::Display for Response {
 }
 
 /// Command executor that runs commands and generates responses
-pub struct CommandExecutor<D: DeviceManagement> {
+pub struct CommandExecutor<D: for<'d> DeviceManagement<'d>> {
     device_manager: D,
 }
 
-impl<D: DeviceManagement> CommandExecutor<D> {
+impl<D: for<'d> DeviceManagement<'d>> CommandExecutor<D> {
     /// Create a new command executor
     pub fn new(device_manager: D) -> Self {
         Self { device_manager }

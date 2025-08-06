@@ -3,45 +3,41 @@ use crate::hw::blackpill_f401::led::BlackPillLed;
 use crate::hw::blackpill_f401::usb::UsbManager;
 /// Device initialization and management for STM32F401 Black Pill
 /// Provides hardware-specific device setup and configuration
-use crate::hw::traits::{DeviceManagement, DeviceInfo, InitResult};
+use crate::hw::traits::{DeviceManagement, DeviceInfo};
 use defmt::{info, warn};
 use embassy_stm32::Config;
 
 /// Device manager for STM32F401 Black Pill
 /// Handles device initialization, clock configuration, and system management
+/// Stores peripherals individually to enable safe peripheral creation with lifetimes
 pub struct BlackPillDevice {
-    initialized: bool,
+    // Store individual peripherals as Options to allow safe extraction
+    pc13: Option<embassy_stm32::peripherals::PC13>,
+    usb_otg_fs: Option<embassy_stm32::peripherals::USB_OTG_FS>,
+    pa12: Option<embassy_stm32::peripherals::PA12>,
+    pa11: Option<embassy_stm32::peripherals::PA11>,
+    rtc: Option<embassy_stm32::peripherals::RTC>,
     backup_registers: Option<BlackPillBackupRegisters>,
 }
 
 impl BlackPillDevice {
-    /// Create a new device manager instance
-    pub fn new() -> Self {
+    /// Create a new device manager instance with peripherals stored internally
+    /// This replaces the old unsafe peripheral-passing pattern
+    fn new_internal(peripherals: embassy_stm32::Peripherals) -> Self {
         Self { 
-            initialized: false,
+            pc13: Some(peripherals.PC13),
+            usb_otg_fs: Some(peripherals.USB_OTG_FS),
+            pa12: Some(peripherals.PA12),
+            pa11: Some(peripherals.PA11),
+            rtc: Some(peripherals.RTC),
             backup_registers: None,
         }
     }
 
-}
-
-impl DeviceManagement for BlackPillDevice {
-    /// Timer peripheral type - using TIM2 as default timer
-    type Timer = embassy_stm32::peripherals::TIM2;
-    /// SPI peripheral type - using SPI1 as default SPI
-    type Spi = embassy_stm32::peripherals::SPI1;
-    /// LED type - using BlackPillLed for PC13
-    type Led = BlackPillLed;
-    /// USB Wrapper type - using UsbCdcWrapper for USB communication
-    type UsbWrapper = crate::usb::UsbCdcWrapper;
-    /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
-    type BackupRegisters = BlackPillBackupRegisters;
-
-    /// Initialize the device with proper clock configuration
-    /// This sets up the system clocks, HSE oscillator, and PLL
-    /// Based on working Embassy USB example configuration
-    fn init(&mut self) -> Result<embassy_stm32::Config, &'static str> {
-        let mut config = Config::default();
+    /// Get the Embassy configuration for STM32F401 Black Pill
+    /// This is now a static method that doesn't require a device instance
+    fn get_embassy_config() -> embassy_stm32::Config {
+        let mut config = embassy_stm32::Config::default();
         {
             use embassy_stm32::rcc::*;
             // Configure HSE (High Speed External) oscillator - 25MHz crystal on Black Pill
@@ -70,15 +66,25 @@ impl DeviceManagement for BlackPillDevice {
             // Use PLL as system clock
             config.rcc.sys = Sysclk::PLL1_P;
         }
-
-        self.initialized = true;
-
-        Ok(config)
+        config
     }
+}
 
-    /// Check if the device has been initialized
-    fn is_initialized(&self) -> bool {
-        self.initialized
+impl<'d> DeviceManagement<'d> for BlackPillDevice {
+    /// LED type - using BlackPillLed for PC13
+    type Led = BlackPillLed;
+    /// USB Wrapper type - using UsbCdcWrapper for USB communication
+    type UsbWrapper = crate::usb::UsbCdcWrapper;
+    /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
+    type BackupRegisters = BlackPillBackupRegisters;
+
+    /// Create a new device manager instance with peripherals stored internally
+    /// This static method returns the Embassy configuration and creates the device manager
+    /// with the peripherals stored internally, eliminating unsafe pointer operations
+    fn new_with_peripherals(peripherals: embassy_stm32::Peripherals) -> Result<(embassy_stm32::Config, Self), &'static str> {
+        let config = Self::get_embassy_config();
+        let device = Self::new_internal(peripherals);
+        Ok((config, device))
     }
 
     /// Get device information
@@ -99,56 +105,27 @@ impl DeviceManagement for BlackPillDevice {
         cortex_m::peripheral::SCB::sys_reset();
     }
 
-    /// Initialize LED peripheral separately for early debugging
-    /// This method takes the full peripherals struct and extracts PC13 for LED initialization
-    /// Returns initialized LED instance and remaining peripherals
-    fn init_led(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Led> {
-        // TODO: Replace unsafe pointer operations with safe peripheral extraction
-        // This unsafe code is a workaround and not suitable for production
-        // Consider using embassy's peripheral splitting or a proper HAL abstraction
-        // Extract PC13 for LED initialization using unsafe pointer operations
-        // This is necessary because Rust's ownership system doesn't allow partial moves
-        // from structs while returning the remaining struct
-        let (pc13, remaining_peripherals) = unsafe {
-            let mut p = core::mem::ManuallyDrop::new(peripherals);
-            let pc13 = core::ptr::read(&p.PC13);
-
-            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
-            // Reconstruct peripherals without PC13 by creating a new instance
-            // Note: This is a workaround - in a real implementation, we'd need
-            // a proper way to handle partial peripheral extraction
-            let remaining = core::ptr::read(&*p);
-            (pc13, remaining)
-        };
-
-        let led = BlackPillLed::new(pc13);
-
-        Ok((led, remaining_peripherals))
+    /// Create LED peripheral from stored peripherals for early debugging
+    /// This method safely extracts PC13 from the internally stored peripherals
+    /// The LED is bound to the device manager's lifetime, eliminating unsafe operations
+    fn create_led(&'d mut self) -> Result<Self::Led, &'static str> {
+        if let Some(pc13) = self.pc13.take() {
+            let led = BlackPillLed::new(pc13);
+            Ok(led)
+        } else {
+            Err("PC13 peripheral has already been consumed or not initialized")
+        }
     }
 
-    /// Initialize USB peripheral from embassy_stm32::init output
-    /// This method takes the peripherals struct and extracts what it needs for USB initialization
-    /// Returns initialized USB wrapper instance and remaining peripherals
-    async fn init_usb(
-        &mut self,
-        peripherals: embassy_stm32::Peripherals,
-    ) -> InitResult<Self::UsbWrapper> {
+    /// Create USB peripheral from stored peripherals
+    /// This method safely extracts USB peripherals from the internally stored peripherals
+    /// The USB wrapper is bound to the device manager's lifetime, eliminating unsafe operations
+    async fn create_usb(&'d mut self) -> Result<Self::UsbWrapper, &'static str> {
         info!("Initializing BlackPill USB...");
 
-        // TODO: Replace unsafe pointer operations with safe peripheral extraction
-        // This unsafe code is a workaround and not suitable for production
-        // Extract USB peripherals using unsafe pointer operations
-        let (usb_otg_fs, pa12, pa11, remaining_peripherals) = unsafe {
-            let mut p = core::mem::ManuallyDrop::new(peripherals);
-            let usb_otg_fs = core::ptr::read(&p.USB_OTG_FS);
-            let pa12 = core::ptr::read(&p.PA12);
-            let pa11 = core::ptr::read(&p.PA11);
-
-            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
-            // Reconstruct peripherals without the extracted ones
-            let remaining = core::ptr::read(&*p);
-            (usb_otg_fs, pa12, pa11, remaining)
-        };
+        let usb_otg_fs = self.usb_otg_fs.take().ok_or("USB_OTG_FS peripheral has already been consumed or not initialized")?;
+        let pa12 = self.pa12.take().ok_or("PA12 peripheral has already been consumed or not initialized")?;
+        let pa11 = self.pa11.take().ok_or("PA11 peripheral has already been consumed or not initialized")?;
 
         // Initialize USB manager
         let mut usb_manager = UsbManager::new();
@@ -160,75 +137,23 @@ impl DeviceManagement for BlackPillDevice {
         {
             Ok(usb_wrapper) => {
                 info!("USB wrapper initialized successfully");
-                info!( "BlackPill USB peripherals initialized successfully");
-                Ok((usb_wrapper, remaining_peripherals))
+                info!("BlackPill USB peripherals initialized successfully");
+                Ok(usb_wrapper)
             }
             Err(e) => {
-                warn!( "Failed to initialize USB wrapper: {}", e);
+                warn!("Failed to initialize USB wrapper: {}", e);
                 Err("Failed to initialize USB wrapper")
             }
         }
     }
 
-    /// Initialize a timer peripheral and return it pre-configured
-    /// This method takes the peripherals struct and extracts what it needs for timer initialization
-    /// Returns initialized timer instance and remaining peripherals
-    fn init_timer(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Timer> {
-        info!( "Initializing TIM2 peripheral for timer functionality");
+    /// Create RTC peripheral and backup registers from stored peripherals
+    /// This method safely extracts RTC peripheral from the internally stored peripherals
+    /// The backup registers are bound to the device manager's lifetime, eliminating unsafe operations
+    fn create_rtc(&'d mut self) -> Result<Self::BackupRegisters, &'static str> {
+        info!("Initializing RTC peripheral for backup registers functionality");
 
-        // TODO: Implement complete timer initialization for production use
-        // This function is currently a stub and needs full implementation including:
-        // - Safe peripheral extraction from embassy_stm32::Peripherals
-        // - Timer configuration (prescaler, period, mode)
-        // - Clock source configuration
-        // - Interrupt setup if needed
-        // In a full implementation, this would extract the TIM2 peripheral from embassy_stm32::init()
-        // and configure it appropriately. For now, we return an error since we can't create
-        // peripheral instances without the actual hardware initialization.
-
-        warn!( "Timer peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
-        Err("Timer peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
-    }
-
-    /// Initialize an SPI peripheral and return it pre-configured
-    /// This method takes the peripherals struct and extracts what it needs for SPI initialization
-    /// Returns initialized SPI instance and remaining peripherals
-    fn init_spi(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::Spi> {
-        info!( "Initializing SPI1 peripheral for SPI functionality");
-
-        // TODO: Implement complete SPI initialization for production use
-        // This function is currently a stub and needs full implementation including:
-        // - Safe peripheral extraction from embassy_stm32::Peripherals
-        // - SPI configuration (mode, frequency, data size, bit order)
-        // - GPIO pin configuration for MOSI, MISO, SCK, and CS pins
-        // - DMA setup if required for high-performance transfers
-        // - Error handling and timeout configuration
-        // In a full implementation, this would extract the SPI1 peripheral from embassy_stm32::init()
-        // and configure it appropriately. For now, we return an error since we can't create
-        // peripheral instances without the actual hardware initialization.
-
-        warn!( "SPI peripheral initialization is a stub - peripheral should be obtained from embassy_stm32::init()");
-        Err("SPI peripheral initialization not fully implemented - use embassy_stm32::init() to get peripherals")
-    }
-
-    /// Initialize RTC peripheral and return backup registers wrapper
-    /// This method takes the peripherals struct and extracts what it needs for RTC initialization
-    /// Returns initialized backup registers instance and remaining peripherals
-    fn init_rtc(&mut self, peripherals: embassy_stm32::Peripherals) -> InitResult<Self::BackupRegisters> {
-        info!( "Initializing RTC peripheral for backup registers functionality");
-
-        // TODO: Replace unsafe pointer operations with safe peripheral extraction
-        // This unsafe code is a workaround and not suitable for production
-        // Extract RTC peripheral using unsafe pointer operations
-        let (rtc_peripheral, remaining_peripherals) = unsafe {
-            let mut p = core::mem::ManuallyDrop::new(peripherals);
-            let rtc_peripheral = core::ptr::read(&p.RTC);
-
-            // TODO: This peripheral reconstruction is unsafe and may cause undefined behavior
-            // Reconstruct peripherals without the extracted RTC
-            let remaining = core::ptr::read(&*p);
-            (rtc_peripheral, remaining)
-        };
+        let rtc_peripheral = self.rtc.take().ok_or("RTC peripheral has already been consumed or not initialized")?;
 
         // Initialize RTC with default configuration
         // The LSE clock source should be configured at the system level in embassy_stm32::init()
@@ -240,8 +165,15 @@ impl DeviceManagement for BlackPillDevice {
         // Create backup registers wrapper
         let backup_registers = BlackPillBackupRegisters::new(rtc);
 
-        info!( "RTC and backup registers initialized successfully");
-        Ok((backup_registers, remaining_peripherals))
+        info!("RTC and backup registers initialized successfully");
+        Ok(backup_registers)
+    }
+
+    /// Get access to backup registers for boot task management
+    /// This method provides access to backup registers that have been created via create_rtc
+    /// Returns None if backup registers haven't been created yet
+    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters> {
+        self.backup_registers.as_mut()
     }
 
     /// Reboot the device normally
@@ -330,13 +262,6 @@ impl DeviceManagement for BlackPillDevice {
         }
     }
 
-    /// Get access to backup registers for boot task management
-    /// This method provides access to backup registers that have been initialized via init_rtc
-    /// Returns None if backup registers haven't been initialized yet
-    fn get_backup_registers(&mut self) -> Option<&mut Self::BackupRegisters> {
-        self.backup_registers.as_mut()
-    }
-
     /// Jump to the DFU bootloader without resetting the device
     /// This transfers control directly to the STM32 system DFU bootloader
     /// Note: This function will not return as it transfers control to the bootloader
@@ -372,9 +297,6 @@ impl DeviceManagement for BlackPillDevice {
     }
 }
 
-impl Default for BlackPillDevice {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// Note: Default implementation removed because BlackPillDevice now requires
+// peripherals to be passed in via new_with_peripherals() static method
 
