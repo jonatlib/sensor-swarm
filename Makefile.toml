@@ -113,8 +113,10 @@ script = [
 
 
 [tasks.test-hil]
+description = "Runs HIL tests on real hardware using probe-rs"
+category = "Tests"
 command = "cargo"
-args = ["run", "--features", "defmt-test,hil"]
+args = ["test", "--test", "hil", "--features", "defmt-test,hil", "--config", ".cargo/config-hil.toml"]
 dependencies = ["build"]
 
 

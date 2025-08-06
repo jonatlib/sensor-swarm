@@ -1,0 +1,19 @@
+[target.thumbv7em-none-eabihf]
+# Use probe-rs for HIL tests on real hardware
+runner = ["probe-rs", "run", "--chip", "STM32F401CEUx"]
+rustflags = [
+  "-C", "link-arg=-Tlink.x"
+]
+
+# For HIL tests, use probe-rs instead of QEMU
+[target.'cfg(all(target_arch = "arm", target_os = "none", test))']
+runner = ["probe-rs", "run", "--chip", "STM32F401CEUx"]
+
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = ["probe-rs", "run", "--chip", "STM32F401CEUx"]
+
+[build]
+target = "thumbv7em-none-eabihf"
+
+[env]
+DEFMT_LOG = "trace"
