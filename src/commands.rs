@@ -11,13 +11,15 @@ use crate::hw::traits::DeviceManagement;
 // Sub-modules
 pub mod input;
 pub mod parser;
+pub mod response;
 pub mod executor;
 
 // Re-export public types from sub-modules
 pub use parser::{Command, SensorType};
 pub use input::InputHandler;
 pub use parser::CommandParser;
-pub use executor::{CommandExecutor, Response, SensorValue};
+pub use response::{Response, SensorValue};
+pub use executor::CommandExecutor;
 
 /// Main command handler that coordinates all sub-modules
 pub struct CommandHandler<T: UsbCdc, D: for<'d> DeviceManagement<'d>> {

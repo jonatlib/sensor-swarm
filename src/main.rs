@@ -22,7 +22,7 @@ use sensor_swarm::hw::BlackPillDevice;
 use sensor_swarm::usb::UsbCdcWrapper;
 use sensor_swarm::terminal::create_shared_terminal;
 use sensor_swarm::commands::run_command_handler;
-use sensor_swarm::commands::executor::Response;
+use sensor_swarm::commands::Response;
 
 /// Initialize device manager and embassy framework
 /// 
