@@ -3,6 +3,13 @@
 ## Rust
 
 We are using modern Rust where mod.rs is not needed and you can directly write same filename and same directory name as sub-module.
+When there is missing implementation use `todo!(...)` macro and write a `// TODO ..` commend what the missing functionality is.
+(Use this for example in missing error handling, like `map_err(|_| todo!(...))`)
+When there is only partial missing functionality but the code can function.
+Don't use the `todo!` macro but still write down TODO comment.
+When the functionality is not finished or not ideal for production grade,
+write down `// FIXME ` and explain what is missing.
+
 
 ## Project standards
 
