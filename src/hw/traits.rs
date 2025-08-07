@@ -32,13 +32,17 @@ pub trait DeviceManagement<'d> {
     type UsbWrapper;
     /// BackupRegisters type that will be created from stored peripherals
     type BackupRegisters: crate::hw::traits::BackupRegisters;
+    /// Peripheral type for the specific hardware platform
+    type Peripherals;
+    /// Config type for the specific hardware platform
+    type Config;
 
     /// Create a new device manager instance with peripherals
     /// This static method returns the Embassy configuration and creates the device manager
     /// with the peripherals stored internally
     fn new_with_peripherals(
-        peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(embassy_stm32::Config, Self), &'static str>
+        peripherals: Self::Peripherals,
+    ) -> Result<(Self::Config, Self), &'static str>
     where
         Self: Sized;
 

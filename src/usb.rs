@@ -1,7 +1,10 @@
 /// Hardware-agnostic USB communication module
 /// This module provides USB CDC communication functionality that is independent of specific hardware implementations
 /// The UsbManager for hardware-specific initialization remains in the hw module
+
+#[cfg(feature = "blackpill-f401")]
 use embassy_stm32::usb::Driver;
+#[cfg(feature = "blackpill-f401")]
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 
 /// Trait for hardware-dependent USB CDC serial communication
@@ -29,6 +32,7 @@ pub trait UsbCdc {
     fn wait_connection(&mut self) -> impl core::future::Future<Output = ()>;
 }
 
+#[cfg(feature = "blackpill-f401")]
 /// Simple USB CDC wrapper that implements the UsbCdc trait
 /// This struct provides basic read/write operations for USB CDC communication
 pub struct UsbCdcWrapper {
@@ -36,6 +40,7 @@ pub struct UsbCdcWrapper {
     connected: bool,
 }
 
+#[cfg(feature = "blackpill-f401")]
 impl UsbCdcWrapper {
     /// Create a new USB CDC wrapper with the given CDC class
     pub fn new(
@@ -48,6 +53,7 @@ impl UsbCdcWrapper {
     }
 }
 
+#[cfg(feature = "blackpill-f401")]
 impl UsbCdc for UsbCdcWrapper {
     /// Write bytes to USB CDC
     async fn write(&mut self, data: &[u8]) -> Result<usize, &'static str> {

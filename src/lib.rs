@@ -2,20 +2,20 @@
 #![no_main]
 
 // Module declarations
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod app;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod backup_domain;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod boot_task;
 #[cfg(feature = "blackpill-f401")]
 pub mod commands;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod hw;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod logging;
 pub mod radio;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod sensors;
 #[cfg(feature = "blackpill-f401")]
 pub mod terminal;

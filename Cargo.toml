@@ -33,10 +33,20 @@ blackpill-f401 = [
     "embassy-stm32",
     "embassy-usb",
     "cortex-m",
+    "cortex-m-rt",
+    "cortex-m/critical-section-single-core"  # Optimize critical sections for single-core STM32F401
+]
+pipico = [
+    "embassy-rp",
+    "embassy-usb",
+    "cortex-m",
     "cortex-m-rt"
 ]
 hil = []
 defmt-test = ["dep:defmt-test"]
+
+# Note: blackpill-f401 and pipico are mutually exclusive due to embassy-time-driver conflicts
+# Only one hardware platform can be selected at a time
 
 [dependencies]
 embassy-executor = { version = "0.8.0", features = ["defmt", "arch-cortex-m", "executor-thread"] }
@@ -50,8 +60,9 @@ panic-probe = { version = "1.0.0", features = ["print-defmt", "defmt"] }
 
 # Conditional embedded dependencies
 embassy-stm32 = { version = "0.2.0", features = ["defmt", "stm32f401ce", "unstable-pac", "memory-x", "time-driver-any", "exti", "time"], optional = true }
+embassy-rp = { version = "0.7.0", features = ["defmt", "unstable-pac", "critical-section-impl", "rp2040"], optional = true }
 embassy-usb = { version = "0.2.0", features = ["defmt"], optional = true }
-cortex-m = { version = "0.7.7", features = ["inline-asm", "critical-section-single-core"], optional = true }
+cortex-m = { version = "0.7.7", features = ["inline-asm"], optional = true }
 cortex-m-rt = { version = "0.7.5", optional = true }
 
 # Non-embedded dependencies that work in both environments

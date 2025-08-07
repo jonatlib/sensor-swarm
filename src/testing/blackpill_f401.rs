@@ -39,11 +39,13 @@ impl<'d> DeviceManagement<'d> for MockDevice {
     type Led = MockLed;
     type UsbWrapper = ();
     type BackupRegisters = MockBackupRegisters;
+    type Peripherals = ();
+    type Config = ();
 
     fn new_with_peripherals(
-        _peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(embassy_stm32::Config, Self), &'static str> {
-        Ok((embassy_stm32::Config::default(), MockDevice))
+        _peripherals: Self::Peripherals,
+    ) -> Result<(Self::Config, Self), &'static str> {
+        Ok(((), MockDevice))
     }
 
     fn get_device_info(&self) -> DeviceInfo {

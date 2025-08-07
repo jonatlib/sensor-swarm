@@ -76,13 +76,17 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
     type UsbWrapper = crate::usb::UsbCdcWrapper;
     /// BackupRegisters type - using BlackPillBackupRegisters for RTC backup registers
     type BackupRegisters = BlackPillBackupRegisters;
+    /// Peripheral type for STM32F401
+    type Peripherals = embassy_stm32::Peripherals;
+    /// Config type for STM32F401
+    type Config = embassy_stm32::Config;
 
     /// Create a new device manager instance with peripherals stored internally
     /// This static method returns the Embassy configuration and creates the device manager
     /// with the peripherals stored internally, eliminating unsafe pointer operations
     fn new_with_peripherals(
-        peripherals: embassy_stm32::Peripherals,
-    ) -> Result<(embassy_stm32::Config, Self), &'static str> {
+        peripherals: Self::Peripherals,
+    ) -> Result<(Self::Config, Self), &'static str> {
         let config = Self::get_embassy_config();
         let device = Self::new_internal(peripherals);
         Ok((config, device))
