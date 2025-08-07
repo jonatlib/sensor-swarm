@@ -11,10 +11,14 @@ pub mod types;
 /// STM32F401 Black Pill implementation
 #[cfg(feature = "blackpill-f401")]
 pub mod blackpill_f401;
+#[cfg(feature = "blackpill-f401")]
+pub use blackpill_f401 as device_module;
 
 /// Raspberry Pi Pico (RP2040) implementation
 #[cfg(feature = "pipico")]
 pub mod pipico;
+#[cfg(feature = "pipico")]
+pub use pipico as device_module;
 
 // Re-export commonly used items
 pub use traits::*;
