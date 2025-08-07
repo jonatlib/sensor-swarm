@@ -2,10 +2,8 @@
 /// This module provides USB CDC communication functionality that is independent of specific hardware implementations
 /// The UsbManager for hardware-specific initialization remains in the hw module
 
-#[cfg(feature = "blackpill-f401")]
-use embassy_stm32::usb::Driver;
-#[cfg(feature = "blackpill-f401")]
-use embassy_usb::class::cdc_acm::CdcAcmClass;
+// Use hardware-abstracted type aliases from hw module
+use crate::hw::{CurrentUsbDriver, CurrentCdcAcmClass};
 
 /// Trait for hardware-dependent USB CDC serial communication
 /// This trait provides basic read/write operations for USB serial communication
@@ -36,19 +34,34 @@ pub trait UsbCdc {
 /// Simple USB CDC wrapper that implements the UsbCdc trait
 /// This struct provides basic read/write operations for USB CDC communication
 pub struct UsbCdcWrapper {
-    cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
+    cdc_class: CurrentCdcAcmClass,
     connected: bool,
 }
 
 #[cfg(feature = "blackpill-f401")]
 impl UsbCdcWrapper {
     /// Create a new USB CDC wrapper with the given CDC class
-    pub fn new(
-        cdc_class: CdcAcmClass<'static, Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>,
-    ) -> Self {
+    pub fn new(cdc_class: CurrentCdcAcmClass) -> Self {
         Self {
             cdc_class,
             connected: false,
+        }
+    }
+}
+
+#[cfg(feature = "pipico")]
+/// Simple USB CDC wrapper placeholder for PiPico
+/// This struct provides placeholder USB CDC functionality for RP2040
+pub struct UsbCdcWrapper {
+    _placeholder: (),
+}
+
+#[cfg(feature = "pipico")]
+impl UsbCdcWrapper {
+    /// Create a new USB CDC wrapper placeholder
+    pub fn new(_cdc_class: CurrentCdcAcmClass) -> Self {
+        Self {
+            _placeholder: (),
         }
     }
 }
@@ -106,5 +119,28 @@ impl UsbCdc for UsbCdcWrapper {
     async fn wait_connection(&mut self) {
         self.cdc_class.wait_connection().await;
         self.connected = true;
+    }
+}
+
+#[cfg(feature = "pipico")]
+impl UsbCdc for UsbCdcWrapper {
+    /// Write bytes to USB CDC (placeholder implementation)
+    async fn write(&mut self, _data: &[u8]) -> Result<usize, &'static str> {
+        Err("USB not implemented for PiPico")
+    }
+
+    /// Read bytes from USB CDC (placeholder implementation)
+    async fn read(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
+        Err("USB not implemented for PiPico")
+    }
+
+    /// Check if USB CDC is connected (placeholder implementation)
+    fn is_connected(&self) -> bool {
+        false
+    }
+
+    /// Wait for USB CDC connection (placeholder implementation)
+    async fn wait_connection(&mut self) {
+        // Do nothing - USB not implemented for PiPico
     }
 }

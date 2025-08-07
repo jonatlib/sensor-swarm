@@ -29,7 +29,7 @@ impl UsbManager {
     /// 
     /// # Note
     /// This method consumes the USB manager and creates a CDC interface
-    pub async fn create_cdc_wrapper(self) -> Result<(), &'static str> {
+    pub async fn create_cdc_wrapper(self) -> Result<crate::usb::UsbCdcWrapper, &'static str> {
         info!("Creating USB CDC wrapper for RP2040");
         
         // TODO: Implement USB CDC setup for RP2040

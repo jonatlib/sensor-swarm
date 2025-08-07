@@ -38,9 +38,11 @@ blackpill-f401 = [
 ]
 pipico = [
     "embassy-rp",
-    "embassy-usb",
     "cortex-m",
     "cortex-m-rt"
+    # Note: embassy-rp provides its own critical-section implementation and cortex-m support
+    # Adding explicit cortex-m dependencies for device management functions
+    # TODO: Re-enable embassy-usb once version compatibility is resolved
 ]
 hil = []
 defmt-test = ["dep:defmt-test"]
@@ -61,7 +63,7 @@ panic-probe = { version = "1.0.0", features = ["print-defmt", "defmt"] }
 # Conditional embedded dependencies
 embassy-stm32 = { version = "0.2.0", features = ["defmt", "stm32f401ce", "unstable-pac", "memory-x", "time-driver-any", "exti", "time"], optional = true }
 embassy-rp = { version = "0.7.0", features = ["defmt", "unstable-pac", "critical-section-impl", "rp2040"], optional = true }
-embassy-usb = { version = "0.2.0", features = ["defmt"], optional = true }
+embassy-usb = { version = "0.1.0", features = ["defmt"], optional = true }
 cortex-m = { version = "0.7.7", features = ["inline-asm"], optional = true }
 cortex-m-rt = { version = "0.7.5", optional = true }
 

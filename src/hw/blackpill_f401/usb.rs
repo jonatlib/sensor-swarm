@@ -80,6 +80,7 @@ impl UsbManager {
             unsafe { &mut CONFIG_DESCRIPTOR },
             unsafe { &mut BOS_DESCRIPTOR },
             unsafe { &mut CONTROL_BUF },
+            unsafe { &mut MSOS_DESCRIPTOR },
         );
 
         // TODO: Consider safer state management for production

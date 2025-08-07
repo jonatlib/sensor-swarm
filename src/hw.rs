@@ -47,6 +47,24 @@ pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
 /// Current USB wrapper type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
 pub type CurrentUsbWrapper = ();
 
+// USB driver type aliases for hardware abstraction
+#[cfg(feature = "blackpill-f401")]
+/// Current USB driver type - resolves to embassy_stm32 USB driver when blackpill-f401 feature is enabled
+pub type CurrentUsbDriver = embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>;
+
+#[cfg(feature = "pipico")]
+/// Current USB driver type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
+pub type CurrentUsbDriver = ();
+
+// USB CDC ACM class type aliases for hardware abstraction
+#[cfg(feature = "blackpill-f401")]
+/// Current CDC ACM class type - resolves to embassy_usb CDC ACM class when blackpill-f401 feature is enabled
+pub type CurrentCdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>;
+
+#[cfg(feature = "pipico")]
+/// Current CDC ACM class type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
+pub type CurrentCdcAcmClass = ();
+
 // Embassy initialization functions
 #[cfg(feature = "blackpill-f401")]
 /// Initialize embassy with current device configuration

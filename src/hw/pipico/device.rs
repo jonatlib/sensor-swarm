@@ -86,6 +86,8 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
     fn soft_reset(&self) -> ! {
         info!("Performing soft reset...");
         cortex_m::peripheral::SCB::sys_reset();
+        // This should never be reached, but the compiler needs explicit never-return
+        unreachable!()
     }
 
     /// Create LED peripheral from stored peripherals for early debugging
@@ -147,6 +149,8 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
         info!("Rebooting device...");
         // TODO: Implement proper RP2040 reboot mechanism
         cortex_m::peripheral::SCB::sys_reset();
+        // This should never be reached, but the compiler needs explicit never-return
+        unreachable!()
     }
 
     /// Disable all interrupts to prevent interference during DFU transition
@@ -197,6 +201,8 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
         // For now, just reset - user will need to manually enter BOOTSEL mode
         warn!("RP2040 bootloader entry not fully implemented - performing reset");
         cortex_m::peripheral::SCB::sys_reset();
+        // This should never be reached, but the compiler needs explicit never-return
+        unreachable!()
     }
 
     /// Get the unique hardware ID as a byte array

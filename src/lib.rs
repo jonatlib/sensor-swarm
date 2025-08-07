@@ -19,7 +19,7 @@ pub mod radio;
 pub mod sensors;
 #[cfg(feature = "blackpill-f401")]
 pub mod terminal;
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod usb;
 
 // Testing module - always available for tests
