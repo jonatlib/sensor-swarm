@@ -1,6 +1,6 @@
-// Hardware abstraction module
-// This module contains all direct hardware interaction and platform-specific code
-// All hardware access must be isolated in this module to maintain hardware abstraction
+/// Hardware abstraction module
+/// This module contains all direct hardware interaction and platform-specific code
+/// All hardware access must be isolated in this module to maintain hardware abstraction
 
 /// Hardware abstraction traits
 pub mod traits;

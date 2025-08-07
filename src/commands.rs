@@ -1,9 +1,10 @@
-use crate::hw::traits::DeviceManagement;
 /// Hardware-independent command handling module
 /// This module coordinates the separate command sub-modules:
 /// - input: handles terminal input buffering
 /// - parser: parses commands into enums
 /// - executor: executes commands and generates responses
+
+use crate::hw::traits::DeviceManagement;
 use crate::terminal::SharedTerminal;
 use crate::usb::UsbCdc;
 

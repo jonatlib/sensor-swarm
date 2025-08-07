@@ -33,10 +33,6 @@ mod tests {
     use crate::testing::blackpill_f401::get_hw_mock;
     use defmt::assert;
 
-    #[test]
-    fn dummy_test() {
-        assert!(true);
-    }
 
     // Tests from radio module (not gated behind embedded feature)
     #[test]

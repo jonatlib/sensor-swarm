@@ -1,5 +1,5 @@
-// Radio protocol definitions
-// This module defines the data structures for our custom radio packet format
+/// Radio protocol definitions
+/// This module defines the data structures for our custom radio packet format
 
 use bitfield_struct::bitfield;
 use defmt::Format;
@@ -106,7 +106,7 @@ impl Packet {
     pub fn to_bytes(&self) -> [u8; PACKET_SIZE_BYTES] {
         let mut bytes = [0u8; PACKET_SIZE_BYTES];
 
-        // TODO: Replace unsafe pointer operations with safe serialization
+        // FIXME: Replace unsafe pointer operations with safe serialization
         // This unsafe code should be replaced with safer alternatives for production
         // Serialize header
         let header_bytes = unsafe {
@@ -130,7 +130,7 @@ impl Packet {
     pub fn from_bytes(bytes: &[u8; PACKET_SIZE_BYTES]) -> Self {
         let header_size = core::mem::size_of::<Header>();
 
-        // TODO: Replace unsafe unaligned read with safe deserialization
+        // FIXME: Replace unsafe unaligned read with safe deserialization
         // This unsafe code should be replaced with safer alternatives for production
         // Deserialize header
         let header = unsafe { core::ptr::read_unaligned(bytes.as_ptr() as *const Header) };

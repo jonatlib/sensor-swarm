@@ -1,6 +1,6 @@
-// Application logic module
-// This module contains the main application logic for the sensor node
-// All hardware interaction is done through traits to maintain hardware abstraction
+/// Application logic module
+/// This module contains the main application logic for the sensor node
+/// All hardware interaction is done through traits to maintain hardware abstraction
 
 use crate::hw::traits::{DeviceManagement, Led};
 use crate::terminal_log;
