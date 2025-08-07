@@ -58,40 +58,7 @@ category = "Tests"
 # The `script` runner executes shell commands line-by-line.
 command = "cargo"
 args = ["test"]
-#script = [
-#    # Step 1: Build the specific unit test binary.
-#    # The output binary will be located at the path used in the next step.
-#    'echo "Building test binary..."',
-#    'cargo build --features defmt-test',
-#
-#    # Step 2: Execute the compiled binary with our QEMU script directly.
-#    'echo "Executing test in QEMU..."',
-##    'echo "You can run screen /dev/pts/XXX for logging"',
-##    'echo "Or better run NUM=XXX cargo make test-logs"',
-#    'exec ./qemu-runner.sh target/thumbv7em-none-eabihf/debug/sensor-swarm'
-#]
 dependencies = ["build"]
-
-
-[tasks.test-logs]
-description = "Streams defmt logs from a QEMU PTY. Usage: cargo make logs NUM=<pty_number>"
-script_runner = "@shell"
-script = '''
-#!/usr/bin/env sh
-# Exit the script if any command fails
-set -e
-
-# This is standard shell syntax. It tells the shell to:
-# "Use the value of the NUM environment variable if it is set, otherwise default to 1".
-# cargo-make passes the `NUM=41` you provide on the command line to the shell's environment.
-PTS_TO_USE=${NUM:-1}
-
-echo "INFO: Listening for defmt logs on /dev/pts/${PTS_TO_USE}"
-
-# The shell will now correctly use the PTS_TO_USE variable.
-# The ELF path is still hardcoded as in your file.
-cat "/dev/pts/${PTS_TO_USE}" | defmt-print -e target/thumbv7em-none-eabihf/debug/sensor-swarm
-'''
 
 
 [tasks.test-gdb]
@@ -151,8 +118,6 @@ dependencies = ["st-probe"]
 #command = "st-flash"
 #args = ["--reset", "--flash=32k", "write", "${BINARY_NAME}",  "0x8000000"]
 #args = ["--reset", "--flash=16k", "write", "${BINARY_NAME}",  "0x8000000"]
-
-# dfu-util --device 0483:df11 -D /home/jonatlib/IdeaProjects/stm32f401-sensors/target/thumbv7em-none-eabihf/debug/stm32f401-sensors.bin --alt 0 -s 0x08000000
 command = "dfu-util"
 args = ["--device", "0483:df11", "-D", "target/thumbv7em-none-eabihf/debug/sensor-swarm.bin", "--alt", "0", "-s", "0x08000000:leave"]
 dependencies = ["st-probe", "build-binary", "size", "size-small"]
