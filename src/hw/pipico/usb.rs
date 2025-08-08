@@ -5,7 +5,7 @@ use defmt::{info, warn};
 /// USB manager for Raspberry Pi Pico
 /// Handles USB device initialization and CDC interface setup
 pub struct UsbManager {
-    usb: embassy_rp::peripherals::USB,
+    usb: embassy_rp::Peri<'static, embassy_rp::peripherals::USB>,
 }
 
 impl UsbManager {
@@ -16,7 +16,7 @@ impl UsbManager {
     /// 
     /// # Returns
     /// * `Result<Self, &'static str>` - USB manager or error message
-    pub fn new(usb: embassy_rp::peripherals::USB) -> Result<Self, &'static str> {
+    pub fn new(usb: embassy_rp::Peri<'static, embassy_rp::peripherals::USB>) -> Result<Self, &'static str> {
         info!("Initializing USB manager for RP2040");
         
         Ok(Self { usb })
@@ -30,17 +30,12 @@ impl UsbManager {
     /// # Note
     /// This method consumes the USB manager and creates a CDC interface
     pub async fn create_cdc_wrapper(self) -> Result<crate::usb::UsbCdcWrapper, &'static str> {
-        info!("Creating USB CDC wrapper for RP2040");
-        
-        // TODO: Implement USB CDC setup for RP2040
-        // This involves:
-        // 1. Setting up USB device descriptor
-        // 2. Configuring CDC interface
-        // 3. Creating USB driver
-        // 4. Starting USB task
-        // FIXME: Implement proper USB CDC setup using embassy-rp USB driver
-        
-        todo!("USB CDC wrapper creation not yet implemented for RP2040")
+        info!("Creating USB CDC wrapper for RP2040 (dummy implementation)");
+
+        // Minimal usable implementation for now: return a placeholder UsbCdcWrapper
+        // that satisfies the UsbCdc trait so higher-level terminal can be used.
+        // FIXME: Implement proper USB CDC setup using embassy-rp + embassy-usb.
+        Ok(crate::usb::UsbCdcWrapper::new(()))
     }
     
     /// Check if USB is connected
@@ -117,11 +112,11 @@ mod tests {
 }
 
 // Hardware-specific type aliases for Raspberry Pi Pico (RP2040)
-/// Current USB wrapper type - resolves to unit type for pipico (USB not implemented yet)
-pub type CurrentUsbWrapper = ();
+/// Current USB wrapper type - resolves to UsbCdcWrapper for pipico (dummy implementation)
+pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
 
-/// Current USB driver type - resolves to unit type for pipico (USB not implemented yet)
+/// Current USB driver type - not used in dummy implementation for pipico
 pub type CurrentUsbDriver = ();
 
-/// Current CDC ACM class type - resolves to unit type for pipico (USB not implemented yet)
+/// Current CDC ACM class type - not used in dummy implementation for pipico
 pub type CurrentCdcAcmClass = ();

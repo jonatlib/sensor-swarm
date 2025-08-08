@@ -49,8 +49,8 @@ impl PiPicoDevice {
 impl<'d> DeviceManagement<'d> for PiPicoDevice {
     /// LED type - using PiPicoLed for PIN_25 (built-in LED)
     type Led = PiPicoLed;
-    /// USB Wrapper type - placeholder for future USB implementation
-    type UsbWrapper = ();
+    /// USB Wrapper type - dummy UsbCdcWrapper for terminal usage
+    type UsbWrapper = crate::usb::UsbCdcWrapper;
     /// BackupRegisters type - using PiPicoBackupRegisters for RTC backup registers
     type BackupRegisters = PiPicoBackupRegisters;
     /// Peripheral type for RP2040
@@ -109,15 +109,17 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
         &'d mut self,
     ) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send {
         async move {
-            let _usb = self
+            let usb = self
                 .usb
                 .take()
                 .ok_or("USB peripheral already used or not available")?;
 
-            info!("USB functionality not yet implemented for RP2040");
-            
-            // Return placeholder unit type
-            Ok(())
+            info!("Creating dummy USB CDC wrapper for RP2040");
+
+            // Initialize UsbManager and create a dummy CDC wrapper
+            let manager = UsbManager::new(usb)?;
+            let wrapper = manager.create_cdc_wrapper().await?;
+            Ok(wrapper)
         }
     }
 

@@ -53,7 +53,7 @@ impl UsbCdcWrapper {
 /// Simple USB CDC wrapper placeholder for PiPico
 /// This struct provides placeholder USB CDC functionality for RP2040
 pub struct UsbCdcWrapper {
-    _placeholder: (),
+    connected: bool,
 }
 
 #[cfg(feature = "pipico")]
@@ -61,7 +61,7 @@ impl UsbCdcWrapper {
     /// Create a new USB CDC wrapper placeholder
     pub fn new(_cdc_class: CurrentCdcAcmClass) -> Self {
         Self {
-            _placeholder: (),
+            connected: false,
         }
     }
 }
@@ -124,23 +124,33 @@ impl UsbCdc for UsbCdcWrapper {
 
 #[cfg(feature = "pipico")]
 impl UsbCdc for UsbCdcWrapper {
-    /// Write bytes to USB CDC (placeholder implementation)
-    async fn write(&mut self, _data: &[u8]) -> Result<usize, &'static str> {
-        Err("USB not implemented for PiPico")
+    /// Write bytes to USB CDC (dummy implementation)
+    async fn write(&mut self, data: &[u8]) -> Result<usize, &'static str> {
+        if !self.connected {
+            // Consider as connected always in dummy implementation
+            self.connected = true;
+        }
+        // Accept data and pretend it was written
+        Ok(data.len())
     }
 
-    /// Read bytes from USB CDC (placeholder implementation)
+    /// Read bytes from USB CDC (dummy implementation, non-blocking)
     async fn read(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
-        Err("USB not implemented for PiPico")
+        if !self.connected {
+            self.connected = true;
+        }
+        // No data available in dummy implementation
+        Ok(0)
     }
 
-    /// Check if USB CDC is connected (placeholder implementation)
+    /// Check if USB CDC is connected (dummy implementation)
     fn is_connected(&self) -> bool {
-        false
+        self.connected
     }
 
-    /// Wait for USB CDC connection (placeholder implementation)
+    /// Wait for USB CDC connection (dummy implementation)
     async fn wait_connection(&mut self) {
-        // Do nothing - USB not implemented for PiPico
+        // Instantly consider connected
+        self.connected = true;
     }
 }

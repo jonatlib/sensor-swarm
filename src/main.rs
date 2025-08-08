@@ -107,8 +107,7 @@ async fn init_led_with_status(device_manager: &mut CurrentDevice) -> CurrentLed 
 }
 
 /// Initialize USB and create terminal interface (unified version)
-/// Note: USB and terminal functionality is only available on BlackPill
-#[cfg(feature = "blackpill-f401")]
+#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 async fn init_usb_and_terminal(
     device_manager: &mut CurrentDevice,
 ) -> sensor_swarm::terminal::SharedTerminal<CurrentUsbWrapper> {
@@ -180,9 +179,19 @@ async fn main(spawner: Spawner) -> ! {
     // PiPico-specific functionality
     #[cfg(feature = "pipico")]
     {
-        info!("PiPico initialization complete");
+        info!("PiPico: initializing USB and terminal (dummy)");
 
-        // Simple LED blink loop for now
+        // Initialize USB and terminal (dummy implementation allows usage)
+        let terminal = init_usb_and_terminal(&mut device_manager).await;
+
+        {
+            let mut t = terminal.lock().await;
+            // Initialize terminal (waits for connection; dummy connects instantly)
+            let _ = t.init().await;
+            let _ = t.write_logs("PiPico terminal ready (dummy USB)").await;
+        }
+
+        // Simple LED blink loop to show liveness
         loop {
             blink_led_all_complete(&mut led).await;
             embassy_time::Timer::after_millis(2000).await;
