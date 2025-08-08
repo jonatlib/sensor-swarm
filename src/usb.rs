@@ -30,7 +30,6 @@ pub trait UsbCdc {
     fn wait_connection(&mut self) -> impl core::future::Future<Output = ()>;
 }
 
-#[cfg(feature = "blackpill-f401")]
 /// Simple USB CDC wrapper that implements the UsbCdc trait
 /// This struct provides basic read/write operations for USB CDC communication
 pub struct UsbCdcWrapper {
@@ -38,7 +37,6 @@ pub struct UsbCdcWrapper {
     connected: bool,
 }
 
-#[cfg(feature = "blackpill-f401")]
 impl UsbCdcWrapper {
     /// Create a new USB CDC wrapper with the given CDC class
     pub fn new(cdc_class: CurrentCdcAcmClass) -> Self {
@@ -49,24 +47,7 @@ impl UsbCdcWrapper {
     }
 }
 
-#[cfg(feature = "pipico")]
-/// Simple USB CDC wrapper placeholder for PiPico
-/// This struct provides placeholder USB CDC functionality for RP2040
-pub struct UsbCdcWrapper {
-    connected: bool,
-}
 
-#[cfg(feature = "pipico")]
-impl UsbCdcWrapper {
-    /// Create a new USB CDC wrapper placeholder
-    pub fn new(_cdc_class: CurrentCdcAcmClass) -> Self {
-        Self {
-            connected: false,
-        }
-    }
-}
-
-#[cfg(feature = "blackpill-f401")]
 impl UsbCdc for UsbCdcWrapper {
     /// Write bytes to USB CDC
     async fn write(&mut self, data: &[u8]) -> Result<usize, &'static str> {
@@ -118,39 +99,6 @@ impl UsbCdc for UsbCdcWrapper {
     /// Wait for USB CDC connection
     async fn wait_connection(&mut self) {
         self.cdc_class.wait_connection().await;
-        self.connected = true;
-    }
-}
-
-#[cfg(feature = "pipico")]
-impl UsbCdc for UsbCdcWrapper {
-    /// Write bytes to USB CDC (dummy implementation)
-    async fn write(&mut self, data: &[u8]) -> Result<usize, &'static str> {
-        if !self.connected {
-            // Consider as connected always in dummy implementation
-            self.connected = true;
-        }
-        // Accept data and pretend it was written
-        Ok(data.len())
-    }
-
-    /// Read bytes from USB CDC (dummy implementation, non-blocking)
-    async fn read(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> {
-        if !self.connected {
-            self.connected = true;
-        }
-        // No data available in dummy implementation
-        Ok(0)
-    }
-
-    /// Check if USB CDC is connected (dummy implementation)
-    fn is_connected(&self) -> bool {
-        self.connected
-    }
-
-    /// Wait for USB CDC connection (dummy implementation)
-    async fn wait_connection(&mut self) {
-        // Instantly consider connected
         self.connected = true;
     }
 }
