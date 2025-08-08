@@ -330,3 +330,9 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
 
 // Note: Default implementation removed because BlackPillDevice now requires
 // peripherals to be passed in via new_with_peripherals() static method
+
+/// Initialize embassy with current device configuration
+/// Returns the embassy peripherals for STM32F401 Black Pill
+pub fn init_embassy() -> embassy_stm32::Peripherals {
+    embassy_stm32::init(BlackPillDevice::get_embassy_config())
+}

@@ -115,3 +115,13 @@ mod tests {
         }
     }
 }
+
+// Hardware-specific type aliases for Raspberry Pi Pico (RP2040)
+/// Current USB wrapper type - resolves to unit type for pipico (USB not implemented yet)
+pub type CurrentUsbWrapper = ();
+
+/// Current USB driver type - resolves to unit type for pipico (USB not implemented yet)
+pub type CurrentUsbDriver = ();
+
+/// Current CDC ACM class type - resolves to unit type for pipico (USB not implemented yet)
+pub type CurrentCdcAcmClass = ();

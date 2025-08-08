@@ -11,8 +11,15 @@ pub mod usb_defmt_logger;
 // Re-export commonly used types
 pub use crate::hw::traits::DeviceInfo;
 pub use backup_registers::PiPicoBackupRegisters;
-pub use device::PiPicoDevice;
+pub use device::{init_embassy, PiPicoDevice};
 pub use flash::{get_flash_range, PiPicoFlashStorage};
 pub use gpio::{PiPicoGpioInit, PiPicoGpioManager, GpioPinInfo};
 pub use led::{PiPicoLed, PiPicoLedManager, PiPicoPwmLed, LedInfo};
-pub use usb::UsbManager;
+pub use usb::{CurrentCdcAcmClass, CurrentUsbDriver, CurrentUsbWrapper, UsbManager};
+
+// Hardware-specific type aliases for Raspberry Pi Pico (RP2040)
+/// Current device type - resolves to PiPicoDevice for pipico
+pub type CurrentDevice = PiPicoDevice;
+
+/// Current LED type - resolves to PiPicoLed for pipico
+pub type CurrentLed = PiPicoLed;

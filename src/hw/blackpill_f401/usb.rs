@@ -111,3 +111,13 @@ impl Default for UsbManager {
         Self::new()
     }
 }
+
+// Hardware-specific type aliases for STM32F401 Black Pill
+/// Current USB wrapper type - resolves to UsbCdcWrapper for blackpill-f401
+pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
+
+/// Current USB driver type - resolves to embassy_stm32 USB driver for blackpill-f401
+pub type CurrentUsbDriver = embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>;
+
+/// Current CDC ACM class type - resolves to embassy_usb CDC ACM class for blackpill-f401
+pub type CurrentCdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>;

@@ -228,3 +228,9 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
         hex_string
     }
 }
+
+/// Initialize embassy with current device configuration
+/// Returns the embassy peripherals for Raspberry Pi Pico (RP2040)
+pub fn init_embassy() -> embassy_rp::Peripherals {
+    embassy_rp::init(PiPicoDevice::get_embassy_config())
+}

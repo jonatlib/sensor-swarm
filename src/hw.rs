@@ -27,60 +27,23 @@ pub use types::*;
 // Conditional type aliases for unified device access
 // This allows main.rs to use a single CurrentDevice type regardless of hardware platform
 
-#[cfg(feature = "blackpill-f401")]
-/// Current device type - resolves to BlackPillDevice when blackpill-f401 feature is enabled
-pub type CurrentDevice = BlackPillDevice;
+/// Current device type - resolves based on the selected device module
+pub use device_module::CurrentDevice;
 
-#[cfg(feature = "pipico")]
-/// Current device type - resolves to PiPicoDevice when pipico feature is enabled
-pub type CurrentDevice = PiPicoDevice;
+/// Current LED type - resolves based on the selected device module
+pub use device_module::CurrentLed;
 
-#[cfg(feature = "blackpill-f401")]
-/// Current LED type - resolves to BlackPillLed when blackpill-f401 feature is enabled
-pub type CurrentLed = BlackPillLed;
+/// Current USB wrapper type - resolves based on the selected device module
+pub use device_module::CurrentUsbWrapper;
 
-#[cfg(feature = "pipico")]
-/// Current LED type - resolves to PiPicoLed when pipico feature is enabled
-pub type CurrentLed = PiPicoLed;
+/// Current USB driver type - resolves based on the selected device module
+pub use device_module::CurrentUsbDriver;
 
-#[cfg(feature = "blackpill-f401")]
-/// Current USB wrapper type - resolves to UsbCdcWrapper when blackpill-f401 feature is enabled
-pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
+/// Current CDC ACM class type - resolves based on the selected device module
+pub use device_module::CurrentCdcAcmClass;
 
-#[cfg(feature = "pipico")]
-/// Current USB wrapper type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
-pub type CurrentUsbWrapper = ();
-
-// USB driver type aliases for hardware abstraction
-#[cfg(feature = "blackpill-f401")]
-/// Current USB driver type - resolves to embassy_stm32 USB driver when blackpill-f401 feature is enabled
-pub type CurrentUsbDriver = embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>;
-
-#[cfg(feature = "pipico")]
-/// Current USB driver type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
-pub type CurrentUsbDriver = ();
-
-// USB CDC ACM class type aliases for hardware abstraction
-#[cfg(feature = "blackpill-f401")]
-/// Current CDC ACM class type - resolves to embassy_usb CDC ACM class when blackpill-f401 feature is enabled
-pub type CurrentCdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>;
-
-#[cfg(feature = "pipico")]
-/// Current CDC ACM class type - resolves to unit type when pipico feature is enabled (USB not implemented yet)
-pub type CurrentCdcAcmClass = ();
-
-// Embassy initialization functions
-#[cfg(feature = "blackpill-f401")]
-/// Initialize embassy with current device configuration
-pub fn init_embassy() -> embassy_stm32::Peripherals {
-    embassy_stm32::init(BlackPillDevice::get_embassy_config())
-}
-
-#[cfg(feature = "pipico")]
-/// Initialize embassy with current device configuration
-pub fn init_embassy() -> embassy_rp::Peripherals {
-    embassy_rp::init(PiPicoDevice::get_embassy_config())
-}
+/// Embassy initialization function - resolves based on the selected device module
+pub use device_module::init_embassy;
 
 #[cfg(feature = "blackpill-f401")]
 pub use blackpill_f401::{
