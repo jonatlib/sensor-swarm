@@ -2,24 +2,15 @@
 #![no_main]
 
 // Module declarations
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod app;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod backup_domain;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod boot_task;
-#[cfg(feature = "blackpill-f401")]
 pub mod commands;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod hw;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod logging;
 pub mod radio;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod sensors;
-#[cfg(feature = "blackpill-f401")]
 pub mod terminal;
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 pub mod usb;
 
 // Testing module - always available for tests

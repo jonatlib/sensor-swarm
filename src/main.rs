@@ -15,22 +15,14 @@ use embassy_executor::Spawner;
 
 // Unified imports using conditional type aliases
 use sensor_swarm::hw::traits::{DeviceManagement, Led};
-use sensor_swarm::hw::{CurrentDevice, CurrentLed, init_embassy};
-#[cfg(feature = "blackpill-f401")]
-use sensor_swarm::hw::CurrentUsbWrapper;
+use sensor_swarm::hw::{CurrentDevice, CurrentLed, CurrentUsbWrapper, init_embassy};
 
 // BlackPill-specific imports
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::app::SensorApp;
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::backup_domain::BackupDomain;
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::boot_task::execute_boot_task;
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::commands::run_command_handler;
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::commands::Response;
-#[cfg(feature = "blackpill-f401")]
 use sensor_swarm::terminal::create_shared_terminal;
 
 /// Initialize device manager and embassy framework (unified version)
@@ -54,21 +46,10 @@ fn init_device_and_embassy() -> CurrentDevice {
     let device_info = device_manager.get_device_info();
     
     // Only log device info with Response format for BlackPill (which has Response type)
-    #[cfg(feature = "blackpill-f401")]
-    {
-        let response: Response = device_info.into();
-        let mut response_str = heapless::String::<512>::new();
-        let _ = core::fmt::write(&mut response_str, format_args!("{response}"));
-        info!("{}", response_str.as_str());
-    }
-    
-    // For other devices, just log the device info directly
-    #[cfg(not(feature = "blackpill-f401"))]
-    {
-        info!("Device: {} - {}", device_info.model, device_info.board);
-        info!("Flash: {}KB, RAM: {}KB", device_info.flash_size / 1024, device_info.ram_size / 1024);
-        info!("System Clock: {}Hz, USB Clock: {}Hz", device_info.system_clock_hz, device_info.usb_clock_hz);
-    }
+    let response: Response = device_info.into();
+    let mut response_str = heapless::String::<512>::new();
+    let _ = core::fmt::write(&mut response_str, format_args!("{response}"));
+    info!("{}", response_str.as_str());
 
     device_manager
 }
@@ -76,28 +57,17 @@ fn init_device_and_embassy() -> CurrentDevice {
 /// Initialize RTC, backup domain and execute boot tasks (unified version)
 /// Note: RTC and boot tasks are only available on BlackPill
 fn init_rtc_and_boot_tasks(device_manager: &mut CurrentDevice) {
-    #[cfg(feature = "blackpill-f401")]
-    {
-        info!("Initializing RTC and processing boot tasks");
+    info!("Initializing RTC and processing boot tasks");
 
-        let backup_registers = device_manager
-            .create_rtc()
-            .expect("RTC initialization failed");
+    let backup_registers = device_manager
+        .create_rtc()
+        .expect("RTC initialization failed");
 
-        let mut backup_domain = BackupDomain::new(backup_registers);
-        let boot_task = backup_domain.boot_task().read_and_clear();
-        info!("Boot task consumed: {:?}", boot_task);
+    let mut backup_domain = BackupDomain::new(backup_registers);
+    let boot_task = backup_domain.boot_task().read_and_clear();
+    info!("Boot task consumed: {:?}", boot_task);
 
-        execute_boot_task(boot_task, device_manager);
-    }
-    
-    #[cfg(not(feature = "blackpill-f401"))]
-    {
-        info!("RTC and boot tasks not available on this platform");
-        // For other platforms, we can still create RTC for backup registers if needed
-        // but skip the boot task processing
-        let _ = device_manager.create_rtc();
-    }
+    execute_boot_task(boot_task, device_manager);
 }
 
 /// Blink LED to indicate initialization step completion (unified version)
@@ -189,6 +159,7 @@ async fn main(spawner: Spawner) -> ! {
     // Initialize LED with status indication
     let mut led = init_led_with_status(&mut device_manager).await;
 
+    // FIXME get rid of the separation acording to a board type
     // BlackPill-specific functionality
     #[cfg(feature = "blackpill-f401")]
     {
