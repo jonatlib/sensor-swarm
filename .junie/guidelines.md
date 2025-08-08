@@ -56,6 +56,12 @@ All these should be also presented in traits in `hw` module.
 All HW agnostic code should be outside of `hw` module, and can be dependent on the `hw` traits.
 But not directly on specific HW.
 
+All HW dependent types, functions etc. must be under `hw` module in its corresponding HW sub-module.
+So things like `embassy_stm32` or `cortex` etc..
+must be always used only under `hw` module, and then re-exported from here under a different type name.
+In the project itself only these types from hw module should be used.
+Or global crates which are HW independent.
+
 
 ## Project description
 
