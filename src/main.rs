@@ -107,7 +107,6 @@ async fn init_led_with_status(device_manager: &mut CurrentDevice) -> CurrentLed 
 }
 
 /// Initialize USB and create terminal interface (unified version)
-#[cfg(any(feature = "blackpill-f401", feature = "pipico"))]
 async fn init_usb_and_terminal(
     device_manager: &mut CurrentDevice,
 ) -> sensor_swarm::terminal::SharedTerminal<CurrentUsbWrapper> {
@@ -125,7 +124,6 @@ async fn init_usb_and_terminal(
 
 /// Start the command handler task (unified version)
 /// Note: Command handler is only available on BlackPill
-#[cfg(feature = "blackpill-f401")]
 fn start_command_handler(
     _spawner: &Spawner,
     _terminal: sensor_swarm::terminal::SharedTerminal<CurrentUsbWrapper>,
@@ -158,10 +156,6 @@ async fn main(spawner: Spawner) -> ! {
     // Initialize LED with status indication
     let mut led = init_led_with_status(&mut device_manager).await;
 
-    // FIXME get rid of the separation acording to a board type
-    // BlackPill-specific functionality
-    #[cfg(feature = "blackpill-f401")]
-    {
         // Initialize USB and terminal
         let terminal = init_usb_and_terminal(&mut device_manager).await;
 
@@ -174,32 +168,8 @@ async fn main(spawner: Spawner) -> ! {
         // Create and run the main application
         let mut app = SensorApp::new(led, device_manager);
         app.run().await
-    }
-
-    // PiPico-specific functionality
-    #[cfg(feature = "pipico")]
-    {
-        info!("PiPico: initializing USB and terminal (dummy)");
-
-        // Initialize USB and terminal (dummy implementation allows usage)
-        let terminal = init_usb_and_terminal(&mut device_manager).await;
-
-        {
-            let mut t = terminal.lock().await;
-            // Initialize terminal (waits for connection; dummy connects instantly)
-            let _ = t.init().await;
-            let _ = t.write_logs("PiPico terminal ready (dummy USB)").await;
-        }
-
-        // Simple LED blink loop to show liveness
-        loop {
-            blink_led_all_complete(&mut led).await;
-            embassy_time::Timer::after_millis(2000).await;
-        }
-    }
 }
 
-#[cfg(feature = "blackpill-f401")]
 #[embassy_executor::task]
 async fn command_handler_task(
     terminal: sensor_swarm::terminal::SharedTerminal<CurrentUsbWrapper>,
