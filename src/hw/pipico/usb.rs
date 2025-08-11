@@ -32,10 +32,11 @@ impl UsbManager {
     pub async fn create_cdc_wrapper(self) -> Result<crate::usb::UsbCdcWrapper, &'static str> {
         info!("Creating USB CDC wrapper for RP2040 (dummy implementation)");
 
-        // Minimal usable implementation for now: return a placeholder UsbCdcWrapper
+        // Minimal usable implementation for now: return a dummy CDC-ACM class
         // that satisfies the UsbCdc trait so higher-level terminal can be used.
         // FIXME: Implement proper USB CDC setup using embassy-rp + embassy-usb.
-        Ok(crate::usb::UsbCdcWrapper::new(()))
+        let cdc = DummyCdcAcmClass::new();
+        Ok(crate::usb::UsbCdcWrapper::new(cdc))
     }
     
     /// Check if USB is connected
@@ -111,6 +112,24 @@ mod tests {
     }
 }
 
+// Dummy CDC-ACM implementation for RP2040 to satisfy hardware-agnostic USB wrapper
+/// Minimal placeholder matching the subset of embassy_usb CdcAcmClass API we use.
+pub struct DummyCdcAcmClass;
+
+impl DummyCdcAcmClass {
+    /// Create a new dummy CDC-ACM class
+    pub fn new() -> Self { Self }
+
+    /// Write a packet of bytes over USB CDC (dummy)
+    pub async fn write_packet(&mut self, _data: &[u8]) -> Result<(), &'static str> { Ok(()) }
+
+    /// Read a packet of bytes from USB CDC (dummy)
+    pub async fn read_packet(&mut self, _buffer: &mut [u8]) -> Result<usize, &'static str> { Ok(0) }
+
+    /// Wait for a USB CDC connection (dummy)
+    pub async fn wait_connection(&mut self) { embassy_time::Timer::after_millis(5).await; }
+}
+
 // Hardware-specific type aliases for Raspberry Pi Pico (RP2040)
 /// Current USB wrapper type - resolves to UsbCdcWrapper for pipico (dummy implementation)
 pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
@@ -118,5 +137,5 @@ pub type CurrentUsbWrapper = crate::usb::UsbCdcWrapper;
 /// Current USB driver type - not used in dummy implementation for pipico
 pub type CurrentUsbDriver = ();
 
-/// Current CDC ACM class type - not used in dummy implementation for pipico
-pub type CurrentCdcAcmClass = ();
+/// Current CDC ACM class type - use dummy CDC-ACM implementation for pipico
+pub type CurrentCdcAcmClass = DummyCdcAcmClass;
