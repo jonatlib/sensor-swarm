@@ -107,6 +107,7 @@ impl<'d> DeviceManagement<'d> for PiPicoDevice {
     /// This method safely extracts USB from the internally stored peripherals
     fn create_usb(
         &'d mut self,
+        _spawner: &embassy_executor::Spawner,
     ) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send {
         async move {
             let usb = self

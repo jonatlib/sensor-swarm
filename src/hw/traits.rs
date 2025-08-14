@@ -62,6 +62,7 @@ pub trait DeviceManagement<'d> {
     /// The USB wrapper is bound to the device manager's lifetime
     fn create_usb(
         &'d mut self,
+        spawner: &embassy_executor::Spawner,
     ) -> impl core::future::Future<Output = Result<Self::UsbWrapper, &'static str>> + Send;
 
     /// Create RTC peripheral and backup registers from stored peripherals

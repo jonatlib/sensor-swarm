@@ -126,7 +126,7 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
     /// Create USB peripheral from stored peripherals
     /// This method safely extracts USB peripherals from the internally stored peripherals
     /// The USB wrapper is bound to the device manager's lifetime, eliminating unsafe operations
-    async fn create_usb(&'d mut self) -> Result<Self::UsbWrapper, &'static str> {
+    async fn create_usb(&'d mut self, spawner: &embassy_executor::Spawner) -> Result<Self::UsbWrapper, &'static str> {
         info!("Initializing BlackPill USB...");
 
         let usb_otg_fs = self
@@ -147,7 +147,7 @@ impl<'d> DeviceManagement<'d> for BlackPillDevice {
 
         // Initialize USB with the required peripherals (PA11=D-, PA12=D+)
         match usb_manager
-            .init_with_peripheral(usb_otg_fs, pa12, pa11)
+            .init_with_peripheral(spawner, usb_otg_fs, pa12, pa11)
             .await
         {
             Ok(usb_wrapper) => {

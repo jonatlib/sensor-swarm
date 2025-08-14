@@ -5,7 +5,9 @@ use defmt::*;
 use embassy_stm32::bind_interrupts;
 use embassy_stm32::usb::{Config as UsbConfig, Driver};
 use embassy_usb::class::cdc_acm::CdcAcmClass;
+use embassy_usb::UsbDevice;
 use embassy_usb::{Builder, Config};
+use embassy_executor::Spawner;
 
 // Bind USB OTG FS interrupt
 bind_interrupts!(struct Irqs {
@@ -28,9 +30,11 @@ impl UsbManager {
     }
 
     /// Initialize USB peripheral with real USB functionality
-    /// Returns a USB CDC wrapper that implements the UsbCdc trait
+    /// Spawns a background task that runs the USB device, required for enumeration.
+    /// Returns a USB CDC wrapper that implements the UsbCdc trait.
     pub async fn init_with_peripheral(
         &mut self,
+        spawner: &Spawner,
         usb: embassy_stm32::peripherals::USB_OTG_FS,
         dp: embassy_stm32::peripherals::PA12,
         dm: embassy_stm32::peripherals::PA11,
@@ -98,12 +102,30 @@ impl UsbManager {
         // Build the USB device
         let usb_device = builder.build();
 
+        // Spawn USB device run task, required for enumeration
+        // FIXME: Replace unsafe static with StaticCell once available in dependency set
+        static mut USB_DEVICE_SLOT: Option<UsbDevice<'static, embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>> = None;
+        unsafe {
+            USB_DEVICE_SLOT = Some(usb_device);
+            let dev = USB_DEVICE_SLOT.take().ok_or("USB device slot empty")?;
+            spawner
+                .spawn(usb_device_task(dev))
+                .map_err(|_| "Failed to spawn USB device task")?;
+        }
+
         self.initialized = true;
 
         info!("USB CDC-ACM serial interface initialized successfully");
         info!("USB CDC wrapper ready for task execution");
         Ok(UsbCdcWrapper::new(cdc_class))
     }
+}
+
+#[embassy_executor::task]
+async fn usb_device_task(mut device: UsbDevice<'static, embassy_stm32::usb::Driver<'static, embassy_stm32::peripherals::USB_OTG_FS>>) {
+    info!("USB device task started");
+    device.run().await;
+    // FIXME: device.run() should not return under normal operation; handle errors/restarts if needed.
 }
 
 impl Default for UsbManager {

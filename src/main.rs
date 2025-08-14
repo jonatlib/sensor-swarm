@@ -108,12 +108,13 @@ async fn init_led_with_status(device_manager: &mut CurrentDevice) -> CurrentLed 
 
 /// Initialize USB and create terminal interface (unified version)
 async fn init_usb_and_terminal(
+    spawner: &Spawner,
     device_manager: &mut CurrentDevice,
 ) -> sensor_swarm::terminal::SharedTerminal<CurrentUsbWrapper> {
     info!("Initializing USB and terminal interface");
 
     let usb_wrapper = device_manager
-        .create_usb()
+        .create_usb(spawner)
         .await
         .expect("USB initialization failed");
 
@@ -157,7 +158,7 @@ async fn main(spawner: Spawner) -> ! {
     let mut led = init_led_with_status(&mut device_manager).await;
 
         // Initialize USB and terminal
-        let terminal = init_usb_and_terminal(&mut device_manager).await;
+        let terminal = init_usb_and_terminal(&spawner, &mut device_manager).await;
 
         // Final status indication
         blink_led_all_complete(&mut led).await;
